@@ -6011,8 +6011,7 @@ const _stHeaderRow = `<tr class="st-header-row">
       <th style="width:14%">المشهد</th>
       <th style="width:42%">المحتوى</th>
       <th style="width:10%">الوجه</th>
-      <th style="width:11%">ملف A</th>
-      <th style="width:11%">ملف B</th>
+      <th style="width:16%">الملفات</th>
       <th style="width:44px">✓</th>
     </tr>`;
 
@@ -6023,7 +6022,7 @@ function buildTableViewHTML() {
   segs.forEach(seg => {
     const ruknOpts = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب']
       .map(r=>`<option value="${r}" ${(seg.rukn||''===r)?'selected':''}>${r}</option>`).join('');
-    rows += `<tr class="st-seg-row"><td colspan="5">🎬 ${esc(seg.title||'مقطع')}</td>
+    rows += `<tr class="st-seg-row"><td colspan="4">🎬 ${esc(seg.title||'مقطع')}</td>
       <td colspan="2" style="padding:6px 10px">
         <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
           <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${ruknOpts}
@@ -6040,10 +6039,13 @@ function buildTableViewHTML() {
           oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
         <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
           oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"></td>
-        <td><input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
-          oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"></td>
-        <td><input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
-          oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric"></td>
+        <td style="padding:0">
+          <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
+            oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
+            style="border-bottom:1px solid var(--border)">
+          <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
+            oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
+        </td>
         <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
           onchange="stToggleDone('${s.id}',this.checked)"></td>
       </tr>`;
