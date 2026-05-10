@@ -1895,6 +1895,51 @@
     gap: 8px;
   }
 
+  /* ── Table View ── */
+  .shots-table-wrap {
+    width: 100%; overflow-x: auto; border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  .shots-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; min-width: 700px;
+  }
+  .shots-table thead th {
+    background: var(--surface-2); color: var(--text-2);
+    font-weight: 600; font-size: 11px; letter-spacing: 0.3px;
+    padding: 10px 12px; text-align: right; white-space: nowrap;
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2;
+  }
+  .shots-table td {
+    padding: 0; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .shots-table tr:last-child td { border-bottom: none; }
+  .shots-table tr:hover td { background: var(--hover); }
+  .shots-table tr.done-row td { opacity: 0.55; }
+  .st-seg-row td {
+    background: var(--surface-1) !important;
+    padding: 7px 12px; font-weight: 700;
+    font-size: 12px; color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+  .st-num { color: var(--text-3); font-size: 11px; padding: 0 10px; width: 32px; text-align: center; }
+  .st-cell-input {
+    width: 100%; box-sizing: border-box;
+    background: transparent; border: none; outline: none;
+    color: var(--text-1); font-size: 13px; font-family: inherit;
+    padding: 10px 12px; resize: none; line-height: 1.5;
+    display: block;
+  }
+  .st-cell-input:focus { background: var(--surface-1); }
+  .st-cell-input::placeholder { color: var(--text-3); }
+  .st-done-cell { text-align: center; width: 44px; }
+  .st-done-cb { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; }
+  .st-title-input { font-weight: 600; min-width: 120px; }
+  .st-content-input { min-width: 180px; min-height: 38px; }
+  .st-face-input { min-width: 90px; }
+  .st-file-input { min-width: 90px; font-family: monospace; font-size: 12px; }
+
   /* Shot compact chip */
   /* ── View dropdown ── */
   .view-drop-wrap { position: relative; }
@@ -2258,6 +2303,8 @@
             <div class="vd-section-label">طريقة العرض</div>
             <label class="vd-item"><input type="checkbox" id="vsFields"> معلومات المشهد</label>
             <label class="vd-item"><input type="checkbox" id="vsTCNotes"> ⏱ الملاحظات الزمنية</label>
+            <div style="height:1px;background:var(--border);margin:4px 0"></div>
+            <label class="vd-item"><input type="checkbox" id="vsTable"> 📊 عرض جدول</label>
           </div>
         </div>
       </div>
@@ -3670,6 +3717,7 @@ function _syncViewDropdown() {
   cb('vsFields',  _viewSettings.showShotFields);
   cb('vsTCNotes', _viewSettings.showTCNotes);
   cb('vsInfo',    _viewSettings.showProjectInfo);
+  cb('vsTable',   _tableView);
   // Apply project info card visibility
   const card = document.getElementById('infoCard');
   if (card) card.style.display = _viewSettings.showProjectInfo ? '' : 'none';
@@ -4077,6 +4125,12 @@ function renderShots() {
 
   const {done, face, rukn, chrono} = _shotFilter;
   const hasFilter = done!=='all' || face || rukn || chrono;
+
+  if (_tableView) {
+    list.innerHTML = buildTableViewHTML();
+    _syncViewToggle(); _updateFilterUI(); _updateProjTrashBtn();
+    return;
+  }
 
   const segsHTML = hasFilter ? _filteredSegHTML()
                               : cur.segments.map(seg=>buildSegmentHTML(seg)).join('');
@@ -5942,6 +5996,67 @@ function tpOpenDisplay() {
   if (s) setTimeout(() => tpSend({ cmd: 'load', text: s.contentRich || s.content || '', fontSize: tpFontSize, speed: tpSpeed }), 800);
 }
 
+// ── Table View ──
+let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
+
+function buildTableViewHTML() {
+  const segs = cur.segments || [];
+  let rows = '';
+  let globalIdx = 0;
+  segs.forEach(seg => {
+    rows += `<tr class="st-seg-row"><td colspan="8">📁 ${esc(seg.title||'مقطع')}</td></tr>`;
+    seg.shots.forEach(s => {
+      globalIdx++;
+      rows += `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
+        <td class="st-num">${globalIdx}</td>
+        <td><input class="st-cell-input st-title-input" value="${esc(s.title||'')}" placeholder="عنوان المشهد"
+          oninput="stSet('${s.id}','title',this.value)" onchange="autoSave()"></td>
+        <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
+          oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
+        <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
+          oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"></td>
+        <td><input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="ملف A"
+          oninput="stSet('${s.id}','filename',this.value)" onchange="autoSave()"></td>
+        <td><input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="ملف B"
+          oninput="stSet('${s.id}','filename2',this.value)" onchange="autoSave()"></td>
+        <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
+          onchange="stToggleDone('${s.id}',this.checked)"></td>
+      </tr>`;
+    });
+  });
+  return `<div class="shots-table-wrap"><table class="shots-table">
+    <thead><tr>
+      <th style="width:36px">#</th>
+      <th>المشهد</th>
+      <th>المحتوى</th>
+      <th>الوجه</th>
+      <th>ملف A</th>
+      <th>ملف B</th>
+      <th style="width:44px">✓</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function stSet(shotId, field, val) {
+  const s = _findShot(shotId); if (!s) return;
+  s[field] = val;
+}
+
+function stToggleDone(shotId, checked) {
+  const s = _findShot(shotId); if (!s) return;
+  s.done = checked;
+  const row = document.getElementById('str-'+shotId);
+  if (row) row.classList.toggle('done-row', checked);
+  updateProgress(); autoSave();
+}
+
+function toggleTableView(val) {
+  _tableView = val;
+  localStorage.setItem('sm_tableView', JSON.stringify(_tableView));
+  renderShots();
+}
+
 // ── Text Import ──
 let _tiCreateMode = false;
 let _tiCreateFolder = null;
@@ -6062,6 +6177,7 @@ Object.assign(window, {
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpStartScroll, tpStopScroll,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
+  toggleTableView, stSet, stToggleDone,
 });
 
 // ── View toggle buttons (wired directly — no window lookup needed) ──
@@ -6070,6 +6186,7 @@ document.getElementById('viewBtnExpanded')?.addEventListener('click', () => setV
 document.getElementById('viewDropBtn')?.addEventListener('click', e => { e.stopPropagation(); toggleViewDropdown(); });
 document.getElementById('vsFields') ?.addEventListener('change', e => applyViewSetting('showShotFields', e.target.checked));
 document.getElementById('vsTCNotes')?.addEventListener('change', e => applyViewSetting('showTCNotes',    e.target.checked));
+document.getElementById('vsTable')  ?.addEventListener('change', e => toggleTableView(e.target.checked));
 
 // ── Mobile FAB visibility on resize ──
 window.addEventListener('resize', () => {
