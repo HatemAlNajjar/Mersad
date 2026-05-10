@@ -6004,7 +6004,7 @@ function buildTableViewHTML() {
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
-    rows += `<tr class="st-seg-row"><td colspan="8">📁 ${esc(seg.title||'مقطع')}</td></tr>`;
+    rows += `<tr class="st-seg-row"><td colspan="8">🎬 ${esc(seg.title||'مقطع')}</td></tr>`;
     seg.shots.forEach(s => {
       globalIdx++;
       rows += `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
