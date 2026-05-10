@@ -2504,6 +2504,8 @@
       <input type="text" class="sf-title-input" id="sfTitleInput" placeholder="عنوان المشهد">
     </div>
     <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn btn-glass btn-sm" onclick="sfNavigate(-1)" id="sfPrevBtn" title="المشهد السابق" style="font-size:16px;padding:4px 10px">‹</button>
+      <button class="btn btn-glass btn-sm" onclick="sfNavigate(1)"  id="sfNextBtn" title="المشهد التالي"  style="font-size:16px;padding:4px 10px">›</button>
       <input type="checkbox" id="sfDoneCb" style="width:16px;height:16px;cursor:pointer">
       <label for="sfDoneCb" style="font-size:13px;color:var(--subtext);cursor:pointer">تم ✓</label>
       <button class="btn btn-glass btn-sm" onclick="closeShotFull()">✕ إغلاق</button>
@@ -4554,6 +4556,7 @@ function openShotFull(id) {
 
   sfRenderNotes();
   document.getElementById('sfOverlay').style.display = 'flex';
+  _sfUpdateNavBtns();
 
   // wire live sync back to shot
   const bind = (elId, field) => {
@@ -4578,6 +4581,25 @@ function closeShotFull() {
   renderShots();
   document.getElementById('sfOverlay').style.display = 'none';
   sfShotId = null;
+}
+
+function sfNavigate(dir) {
+  const all = _allShots();
+  const idx = all.findIndex(s => s.id === sfShotId);
+  if (idx === -1) return;
+  const next = all[idx + dir];
+  if (!next) return;
+  autoSave();
+  openShotFull(next.id);
+}
+
+function _sfUpdateNavBtns() {
+  const all = _allShots();
+  const idx = all.findIndex(s => s.id === sfShotId);
+  const prev = document.getElementById('sfPrevBtn');
+  const next = document.getElementById('sfNextBtn');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= all.length - 1;
 }
 
 function sfRenderNotes() {
@@ -6368,6 +6390,7 @@ Object.assign(window, {
   setViewMode,
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpFullscreen, tpStartScroll, tpStopScroll,
+  sfNavigate, _sfUpdateNavBtns,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
   setTableSort,
   toggleTableView, stSet, stToggleDone, stToggleSeg, stDelShot,
