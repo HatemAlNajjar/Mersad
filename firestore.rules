@@ -13,7 +13,9 @@ service cloud.firestore {
     match /sharedProjects/{shareId} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow update: if (request.auth != null && request.auth.uid == resource.data.ownerUid)
+                    || resource.data.mode == 'edit';
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
     }
     match /userProfiles/{uid} {
       allow read: if request.auth != null;

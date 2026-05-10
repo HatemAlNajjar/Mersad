@@ -2365,6 +2365,17 @@
   <div class="share-modal">
     <h2>🔗 مشاركة المشروع</h2>
     <p id="shareDesc" style="font-size:13px;color:var(--subtext);margin:0;line-height:1.5"></p>
+    <div id="shareModeRow" style="display:flex;gap:16px;margin:10px 0 4px;align-items:center;font-size:13px">
+      <span style="color:var(--subtext)">نوع الرابط:</span>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="radio" name="shareMode" value="view" id="shareModeView" checked>
+        <span>مشاهدة فقط</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="radio" name="shareMode" value="edit" id="shareModeEdit">
+        <span>تحرير</span>
+      </label>
+    </div>
     <div class="share-link-row" id="shareLinkRow" style="display:none">
       <input class="share-link-input" id="shareLinkInput" type="text" readonly onclick="this.select()">
       <button class="btn btn-glass btn-sm" onclick="copyShareLink()">نسخ</button>
@@ -2439,6 +2450,10 @@
 <div class="viewonly-banner" id="viewonlyBanner" style="display:none">
   <span class="viewonly-text">👁 أنت تعرض هذا المشروع بوضع القراءة فقط</span>
   <button class="btn btn-filled btn-sm" onclick="claimSharedProject()" id="claimBtn">إضافة إلى مشاريعي</button>
+</div>
+<div class="viewonly-banner" id="editShareBanner" style="display:none;background:linear-gradient(135deg,#1a6b3a,#2d8a50)">
+  <span class="viewonly-text">✏️ أنت تحرر هذا المشروع عبر رابط مشاركة</span>
+  <button class="btn btn-filled btn-sm" onclick="claimSharedProject()" id="claimEditBtn">إضافة إلى مشاريعي</button>
 </div>
 
 <!-- Text Import Modal -->
@@ -2771,7 +2786,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, collection, getDocs, getDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
+import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // ══════════════════════════════════════════
@@ -2941,7 +2956,7 @@ function showSave(state) {
 //  HOME
 // ══════════════════════════════════════════
 async function showHome() {
-  stopAllTimers(); cur=null; timers={};
+  stopAllTimers(); cur=null; timers={}; _editShareId=null;
   document.getElementById('homePage').classList.add('active');
   document.getElementById('projectPage').classList.remove('active');
   document.getElementById('topLeft').innerHTML=`<div class="brand"><div class="brand-icon">🎬</div>مِرصاد</div>`;
@@ -3322,7 +3337,11 @@ async function autoSave() {
   showSave('saving');
   collectForm();
   cur.lastModified=Date.now();
-  await saveProject(cur);
+  if (_editShareId) {
+    await updateDoc(doc(db, 'sharedProjects', _editShareId), { data: JSON.parse(JSON.stringify(cur)) });
+  } else {
+    await saveProject(cur);
+  }
   showSave('saved');
 }
 
@@ -5189,15 +5208,21 @@ setInterval(()=>{ if(cur) autoSave(); }, 20000);
 //  SHARE PROJECT
 // ══════════════════════════════════════════
 let _viewOnlyData = null;
+let _editShareId = null;
 
 function openShareModal() {
-  if (!cur || cur._viewOnly) return;
+  if (!cur || cur._viewOnly || _editShareId) return;
   const hasShare = !!cur.shareId;
+  const currentMode = cur.shareMode || 'view';
   document.getElementById('shareDesc').textContent = hasShare
     ? 'هذا المشروع مشارك. يمكنك نسخ الرابط أو إلغاء المشاركة.'
-    : 'أنشئ رابطاً لمشاركة هذا المشروع مع آخرين بوضع القراءة فقط.';
+    : 'أنشئ رابطاً لمشاركة هذا المشروع مع آخرين.';
   document.getElementById('shareLinkRow').style.display = hasShare ? 'flex' : 'none';
-  if (hasShare) document.getElementById('shareLinkInput').value = buildShareUrl(cur.shareId);
+  if (hasShare) {
+    document.getElementById('shareLinkInput').value = buildShareUrl(cur.shareId);
+    document.getElementById('shareModeView').checked = currentMode === 'view';
+    document.getElementById('shareModeEdit').checked = currentMode === 'edit';
+  }
   document.getElementById('shareRevokeBtn').style.display = hasShare ? '' : 'none';
   document.getElementById('shareGenBtn').textContent = hasShare ? 'تجديد الرابط' : 'إنشاء رابط';
   document.getElementById('shareStatus').textContent = '';
@@ -5216,6 +5241,7 @@ async function generateShare() {
   if (!cur || !fbUser) return;
   const status = document.getElementById('shareStatus');
   const genBtn = document.getElementById('shareGenBtn');
+  const mode = document.querySelector('input[name="shareMode"]:checked')?.value || 'view';
   status.textContent = 'جاري الإنشاء…'; status.className = 'share-status';
   genBtn.disabled = true;
   try {
@@ -5223,16 +5249,18 @@ async function generateShare() {
     const shareId = uid();
     await setDoc(doc(db, 'sharedProjects', shareId), {
       shareId, ownerUid: fbUser.uid, projectId: cur.id,
-      data: JSON.parse(JSON.stringify(cur)), createdAt: serverTimestamp()
+      data: JSON.parse(JSON.stringify(cur)), mode, createdAt: serverTimestamp()
     });
     cur.shareId = shareId;
+    cur.shareMode = mode;
     await saveProject(cur);
     document.getElementById('shareLinkInput').value = buildShareUrl(shareId);
     document.getElementById('shareLinkRow').style.display = 'flex';
     document.getElementById('shareRevokeBtn').style.display = '';
     document.getElementById('shareDesc').textContent = 'الرابط جاهز. شارك هذا الرابط مع من تريد.';
     document.getElementById('shareGenBtn').textContent = 'تجديد الرابط';
-    status.textContent = '✓ تم إنشاء الرابط'; status.className = 'share-status ok';
+    const modeLabel = mode === 'edit' ? 'تحرير' : 'مشاهدة فقط';
+    status.textContent = `✓ تم إنشاء رابط ${modeLabel}`; status.className = 'share-status ok';
   } catch(e) {
     status.textContent = 'خطأ: ' + e.message; status.className = 'share-status err';
   } finally { genBtn.disabled = false; }
@@ -5245,6 +5273,7 @@ async function revokeShare() {
   try {
     await deleteDoc(doc(db, 'sharedProjects', cur.shareId));
     delete cur.shareId;
+    delete cur.shareMode;
     await saveProject(cur);
     document.getElementById('shareLinkRow').style.display = 'none';
     document.getElementById('shareRevokeBtn').style.display = 'none';
@@ -5267,17 +5296,22 @@ function copyShareLink() {
 
 async function claimSharedProject() {
   if (!fbUser) { alert('يجب تسجيل الدخول أولاً.'); return; }
-  if (!_viewOnlyData) return;
-  const btn = document.getElementById('claimBtn');
+  const isEditShare = !!_editShareId;
+  const sourceData = isEditShare ? cur : _viewOnlyData;
+  if (!sourceData) return;
+  const btnId = isEditShare ? 'claimEditBtn' : 'claimBtn';
+  const btn = document.getElementById(btnId);
   btn.disabled = true; btn.textContent = 'جاري الإضافة…';
   try {
-    const cloned = JSON.parse(JSON.stringify(_viewOnlyData));
+    const cloned = JSON.parse(JSON.stringify(sourceData));
     cloned.id = uid(); cloned.lastModified = Date.now();
-    cloned.folderId = null; delete cloned.shareId;
+    cloned.folderId = null; delete cloned.shareId; delete cloned.shareMode;
     await saveProject(cloned);
     history.replaceState(null, '', location.pathname);
     document.getElementById('viewonlyBanner').style.display = 'none';
+    document.getElementById('editShareBanner').style.display = 'none';
     _viewOnlyData = null;
+    _editShareId = null;
     cur = null;
     await showHome();
     openProject(cloned.id);
@@ -5307,6 +5341,23 @@ function renderViewOnly(p) {
     });
     document.querySelectorAll('#projectPage button:not(#claimBtn)').forEach(el => el.style.pointerEvents = 'none');
   }, 100);
+}
+
+function renderEditShare(shareId, p) {
+  _editShareId = shareId;
+  cur = JSON.parse(JSON.stringify(p));
+  cur._viewOnly = false;
+  document.getElementById('homePage').classList.remove('active');
+  document.getElementById('projectPage').classList.add('active');
+  document.getElementById('editShareBanner').style.display = 'flex';
+  fillForm();
+  renderShots();
+  updateProgress();
+  document.getElementById('topLeft').innerHTML = `
+    <div class="brand"><div class="brand-icon">🎬</div>مِرصاد</div>
+    <div class="tb-divider"></div>
+    <span class="topbar-title">${esc(p.name || 'بدون عنوان')}</span>`;
+  document.getElementById('topRight').innerHTML = `<span style="font-size:12px;color:var(--subtext)">تحرير مشترك</span>`;
 }
 
 // ══════════════════════════════════════════
@@ -6651,7 +6702,11 @@ function updateUserPill(user) {
         location.href = location.pathname;
       } else {
         _viewOnlyData = snap.data().data;
-        renderViewOnly(_viewOnlyData);
+        if (snap.data().mode === 'edit') {
+          renderEditShare(shareId, _viewOnlyData);
+        } else {
+          renderViewOnly(_viewOnlyData);
+        }
       }
     } catch(e) {
       alert('تعذّر تحميل المشروع المشارك.');
