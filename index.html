@@ -1904,11 +1904,12 @@
     width: 100%; border-collapse: collapse;
     font-size: 13px; min-width: 700px;
   }
-  .shots-table thead th {
+  .shots-table thead th,
+  .shots-table .st-header-row th {
     background: var(--surface-2); color: var(--text-2);
     font-weight: 600; font-size: 11px; letter-spacing: 0.3px;
     padding: 10px 12px; text-align: right; white-space: nowrap;
-    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2;
+    border-bottom: 1px solid var(--border);
   }
   .shots-table td {
     padding: 0; border-bottom: 1px solid var(--border);
@@ -5999,12 +6000,23 @@ function tpOpenDisplay() {
 // ── Table View ──
 let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 
+const _stHeaderRow = `<tr class="st-header-row">
+      <th style="width:36px">#</th>
+      <th style="width:14%">المشهد</th>
+      <th style="width:42%">المحتوى</th>
+      <th style="width:10%">الوجه</th>
+      <th style="width:11%">ملف A</th>
+      <th style="width:11%">ملف B</th>
+      <th style="width:44px">✓</th>
+    </tr>`;
+
 function buildTableViewHTML() {
   const segs = cur.segments || [];
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
-    rows += `<tr class="st-seg-row"><td colspan="8">🎬 ${esc(seg.title||'مقطع')}</td></tr>`;
+    rows += `<tr class="st-seg-row"><td colspan="7">🎬 ${esc(seg.title||'مقطع')}</td></tr>`;
+    rows += _stHeaderRow;
     seg.shots.forEach(s => {
       globalIdx++;
       rows += `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
@@ -6025,15 +6037,6 @@ function buildTableViewHTML() {
     });
   });
   return `<div class="shots-table-wrap"><table class="shots-table">
-    <thead><tr>
-      <th style="width:36px">#</th>
-      <th style="width:14%">المشهد</th>
-      <th style="width:42%">المحتوى</th>
-      <th style="width:10%">الوجه</th>
-      <th style="width:11%">ملف A</th>
-      <th style="width:11%">ملف B</th>
-      <th style="width:44px">✓</th>
-    </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
