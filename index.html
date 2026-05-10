@@ -109,6 +109,8 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html { overflow-x: hidden; max-width: 100vw; }
+
     body {
       font-family: 'Salma', -apple-system, 'Helvetica Neue', sans-serif;
       background: var(--bg);
@@ -117,6 +119,8 @@
       direction: rtl;
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      max-width: 100vw;
     }
 
     body::before {
@@ -148,10 +152,11 @@
       backdrop-filter: var(--blur);
       -webkit-backdrop-filter: var(--blur);
       border-bottom: 1px solid var(--border);
+      width: 100%; max-width: 100vw; overflow: hidden;
     }
 
-    .topbar-left { display: flex; align-items: center; gap: 10px; }
-    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
     .brand {
       font-size: 15px; font-weight: 600; color: var(--text-1);
@@ -474,6 +479,41 @@
     }
 
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+
+    /* ── Prep checklist ── */
+    .prep-tasks-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .prep-task-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 8px;
+      background: var(--surface-2); transition: background 0.15s;
+    }
+    .prep-task-item:hover { background: var(--hover); }
+    .prep-task-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
+    .prep-task-text {
+      flex: 1; font-size: 13px; color: var(--text-1); cursor: pointer;
+      transition: color 0.15s, text-decoration 0.15s;
+    }
+    .prep-task-item.done .prep-task-text { color: var(--text-3); text-decoration: line-through; }
+    .prep-task-del {
+      background: none; border: none; color: var(--text-3); cursor: pointer;
+      font-size: 14px; padding: 2px 5px; border-radius: 5px; opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .prep-task-item:hover .prep-task-del { opacity: 1; }
+    .prep-task-del:hover { color: #ff3b30; }
+    .prep-add-row { display: flex; gap: 7px; margin-bottom: 10px; }
+    .prep-add-row input { flex: 1; font-size: 13px; }
+    .prep-add-row button { flex-shrink: 0; }
+    .prep-presets { display: flex; gap: 5px; flex-wrap: wrap; }
+    .prep-preset-btn {
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2);
+      border-radius: 6px; padding: 4px 10px; font-size: 11px; font-family: inherit;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .prep-preset-btn:hover { background: var(--hover); color: var(--text-1); }
+    .prep-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .prep-progress-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prep-progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.3s; }
+    .prep-progress-label { font-size: 11px; color: var(--text-3); min-width: 36px; text-align: left; }
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field.span2 { grid-column: 1 / -1; }
     label { font-size: 11px; font-weight: 500; color: var(--text-2); letter-spacing: 0.1px; }
@@ -611,7 +651,8 @@
       font-size: 28px; font-weight: 300; color: var(--tc);
       letter-spacing: 3px; min-width: 160px;
     }
-    .tc-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tc-btns { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    #sfTcStart { font-size: 22px; padding: 16px 40px; border-radius: 16px; min-width: 160px; letter-spacing: 1px; }
     .tc-input-row { display: flex; gap: 8px; margin-bottom: 6px; }
     .tc-input-row input { flex: 1; font-size: 13px; }
     .tc-presets { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -638,6 +679,177 @@
       border-color: rgba(255,59,48,0.3);
     }
     .tc-preset-red:hover { background: rgba(255,59,48,0.22) !important; border-color: rgba(255,59,48,0.55) !important; }
+
+    /* ═══════════════════ TELEPROMPTER ═══════════════════ */
+    .tp-overlay {
+      position:fixed; inset:0; z-index:750; background:#0d0d0d;
+      display:none; flex-direction:column;
+    }
+    .tp-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 20px; background:#161616;
+      border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0;
+    }
+    .tp-topbar-title { font-size:17px; font-weight:600; color:#fff; }
+    .tp-topbar-actions { display:flex; gap:8px; }
+    .tp-topbar-actions button {
+      font-size:12px; padding:6px 14px; border-radius:8px; cursor:pointer;
+      border:1px solid rgba(255,255,255,0.18); background:rgba(255,255,255,0.07);
+      color:#fff; font-family:inherit;
+    }
+    .tp-topbar-actions button:hover { background:rgba(255,255,255,0.14); }
+    .tp-open-btn {
+      background:rgba(100,210,255,0.12) !important;
+      border-color:rgba(100,210,255,0.35) !important; color:#64d2ff !important;
+    }
+    .tp-preview-wrap {
+      flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column;
+    }
+    .tp-preview-scroll { flex:1; overflow-y:auto; overflow-x:hidden; }
+    .tp-preview-scroll::-webkit-scrollbar { width:4px; }
+    .tp-preview-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+    #tpText {
+      padding:50vh 10% 50vh; color:#fff; font-size:52px; font-weight:500;
+      line-height:1.75; text-align:center; word-break:break-word;
+    }
+    .tp-reading-line {
+      position:absolute; top:40%; left:0; right:0;
+      height:3px; background:rgba(255,220,0,0.2); pointer-events:none; z-index:2;
+    }
+    .tp-fade-top {
+      position:absolute; top:0; left:0; right:0; height:18vh;
+      background:linear-gradient(to bottom,#0d0d0d,transparent); pointer-events:none; z-index:2;
+    }
+    .tp-fade-bot {
+      position:absolute; bottom:0; left:0; right:0; height:18vh;
+      background:linear-gradient(to top,#0d0d0d,transparent); pointer-events:none; z-index:2;
+    }
+    .tp-controls {
+      display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+      padding:14px 20px; background:#161616;
+      border-top:1px solid rgba(255,255,255,0.08); flex-shrink:0;
+    }
+    .tp-play-btn {
+      font-size:15px; font-weight:700; padding:10px 28px; border-radius:10px;
+      cursor:pointer; border:none; background:#30d158; color:#000; font-family:inherit; min-width:110px;
+    }
+    .tp-play-btn.active { background:#ff9f0a; }
+    .tp-ctrl-btn {
+      font-size:13px; padding:8px 16px; border-radius:8px; cursor:pointer;
+      border:1px solid rgba(255,255,255,0.18); background:rgba(255,255,255,0.07);
+      color:#fff; font-family:inherit;
+    }
+    .tp-ctrl-btn:hover { background:rgba(255,255,255,0.14); }
+    .tp-slider-group {
+      display:flex; align-items:center; gap:8px;
+      color:rgba(255,255,255,0.55); font-size:13px;
+    }
+    .tp-slider-group input[type=range] { width:100px; accent-color:#64d2ff; }
+    .tp-slider-group .tp-val { min-width:38px; color:#fff; font-weight:600; font-size:13px; }
+    /* ── Inline teleprompter panel (inside shot full view) ── */
+    #sfTpPanel {
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.13);
+      background: #000; flex-shrink: 0;
+      flex-direction: column;
+    }
+    .sf-tp-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 15px; background: #111; flex-shrink: 0;
+    }
+    .sf-tp-title { color: #64d2ff; font-size: 13px; font-weight: 600; }
+    .sf-tp-ext-btn {
+      font-size: 12px; padding: 5px 11px; border-radius: 7px;
+      background: rgba(100,210,255,0.1); border: 1px solid rgba(100,210,255,0.25);
+      color: #64d2ff; cursor: pointer; font-family: inherit;
+    }
+    .sf-tp-ext-btn:hover { background: rgba(100,210,255,0.2); }
+    .sf-tp-cls-btn {
+      font-size: 13px; padding: 5px 11px; border-radius: 7px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.65); cursor: pointer; font-family: inherit;
+    }
+    .sf-tp-preview {
+      position: relative; height: 42vh; background: #000;
+    }
+    #sfTpScroll {
+      height: 100%; overflow-y: auto; overflow-x: hidden;
+    }
+    #sfTpScroll::-webkit-scrollbar { width: 4px; }
+    #sfTpScroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    #sfTpText {
+      padding: 21vh 8% 21vh; color: #fff;
+      font-family: 'Salma', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 52px; font-weight: 500; line-height: 1.75;
+      text-align: center; word-break: break-word;
+    }
+    .sf-tp-fade-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 18%;
+      background: linear-gradient(to bottom, #000, transparent);
+      pointer-events: none; z-index: 5;
+    }
+    .sf-tp-fade-bot {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 18%;
+      background: linear-gradient(to top, #000, transparent);
+      pointer-events: none; z-index: 5;
+    }
+    .sf-tp-reading-line {
+      position: absolute; top: 40%; left: 0; right: 0;
+      height: 2px; background: rgba(255,220,0,0.22);
+      pointer-events: none; z-index: 10;
+    }
+    .sf-tp-controls {
+      display: grid;
+      grid-template-columns: auto auto 1fr 1fr 1fr;
+      align-items: center; gap: 8px;
+      padding: 8px 12px; background: #161616;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .sf-tp-play-btn {
+      font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 8px;
+      border: none; background: #30d158; color: #000; cursor: pointer; font-family: inherit;
+      white-space: nowrap;
+    }
+    .sf-tp-play-btn.active { background: #ff9f0a; }
+    .sf-tp-ctrl-btn {
+      font-size: 13px; padding: 7px 12px; border-radius: 7px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.07);
+      color: #fff; font-family: inherit; white-space: nowrap;
+    }
+    .sf-tp-ctrl-btn:hover { background: rgba(255,255,255,0.14); }
+    /* Scroll buttons — slim strip beside preview */
+    .sf-tp-scroll-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; padding: 6px; font-size: 16px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6); cursor: pointer; border-radius: 6px;
+      transition: background 0.15s; user-select: none; touch-action: none;
+    }
+    .sf-tp-scroll-btn:hover { background: rgba(255,255,255,0.14); }
+    .sf-tp-scroll-btn:active { background: rgba(255,255,255,0.22); }
+    .sf-tp-slider-grp {
+      display: flex; align-items: center; gap: 5px;
+      color: rgba(255,255,255,0.5); font-size: 11px;
+    }
+    .sf-tp-slider-grp input[type=range] { flex: 1; min-width: 50px; accent-color: #64d2ff; }
+    .sf-tp-slider-grp span:last-child { min-width: 34px; color: #fff; font-weight: 600; font-size: 11px; }
+    .tp-tc-notes-section {
+      margin-top: 5vh; padding: 20px 8% 8vh;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+    .tp-tc-notes-title {
+      color: rgba(255,200,0,0.75); font-size:13px; font-family:Arial;
+      margin-bottom:14px; letter-spacing:0.5px;
+    }
+    .tp-tc-note-item {
+      display:flex; gap:16px; padding:9px 0;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      color:rgba(255,255,255,0.55); font-size:15px; font-family:Arial;
+    }
+    .tp-tc-note-ts {
+      color:rgba(255,200,0,0.65); font-family:'SF Mono',monospace;
+      font-size:12px; white-space:nowrap; padding-top:2px; flex-shrink:0;
+    }
     .tc-notes-list { display: flex; flex-direction: column; gap: 6px; }
     .tc-note {
       display: flex; align-items: flex-start; gap: 10px;
@@ -1042,17 +1254,29 @@
       .topbar {
         height: auto;
         min-height: 52px;
-        padding: 0 14px;
-        /* respects notch on newer iPhones */
+        padding: 0 10px;
         padding-top: env(safe-area-inset-top);
         min-height: calc(52px + env(safe-area-inset-top));
+        gap: 4px;
+        overflow: hidden;
       }
-      .topbar-title { max-width: 120px; font-size: 13px; }
-      .topbar-right { gap: 5px; }
+      .topbar-left  { gap: 5px; min-width: 0; flex-shrink: 1; overflow: hidden; }
+      .topbar-right { gap: 4px; flex-shrink: 0; }
+      .topbar-title { max-width: 90px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      /* Hide secondary topbar items on mobile to prevent overflow */
+      #syncStatus   { display: none !important; }
+      .save-pill    { display: none !important; }
       /* Hide Mac-only / secondary buttons on mobile */
       .mobile-hide { display: none !important; }
       .mobile-only { display: flex !important; }
       .mobile-only-show { display: flex !important; }
+      /* Compact topbar on mobile: hide share btn, user name, theme icon */
+      .topbar .btn-share-mobile-hide { display: none !important; }
+      .topbar .user-pill span { display: none !important; }
+      .topbar .user-pill { padding: 2px 4px; }
+      .topbar .theme-icon { display: none !important; }
+      .topbar .theme-toggle-wrap { gap: 0; }
 
       /* ── Prevent iOS auto-zoom on focus ── */
       input[type="text"],
@@ -1075,7 +1299,7 @@
       }
 
       /* ── Home page ── */
-      .home-wrap { padding: 20px 16px calc(90px + env(safe-area-inset-bottom)); }
+      .home-wrap { padding: 20px 16px calc(90px + env(safe-area-inset-bottom)); max-width: 100%; overflow-x: hidden; }
       .home-hero {
         flex-direction: column; align-items: flex-start;
         gap: 16px; margin-bottom: 24px;
@@ -1846,6 +2070,14 @@
   .seg-rukn-input:focus { border-color: var(--accent); background: rgba(10,132,255,0.12); }
   .seg-rukn-input option { color: var(--text-1); background: var(--card); font-weight: 400; }
   .seg-title-new { flex: 1 1 0 !important; min-width: 0; }
+  .seg-face-input {
+    flex: 0 0 12ch; max-width: 12ch;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px;
+    color: var(--text-1); font-family: inherit;
+  }
+  .seg-face-input:focus { outline: none; border-color: var(--accent); }
+  .seg-face-input::placeholder { color: var(--subtext); }
 </style>
 </head>
 <body>
@@ -1929,6 +2161,24 @@
           <div class="info-inline-field"><label>موقع التصوير</label><input type="text" id="pLocation" placeholder="المكان"></div>
         </div>
         <textarea id="pNotes" style="display:none"></textarea>
+      </div>
+    </div>
+
+    <div class="info-card collapsed" id="prepCard">
+      <div class="info-card-header" onclick="togglePrepCard()">
+        <span class="info-card-label">☑ قائمة التجهيز</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="info-card-body">
+        <div class="prep-progress" id="prepProgress" style="display:none">
+          <div class="prep-progress-track"><div class="prep-progress-fill" id="prepProgressFill"></div></div>
+          <span class="prep-progress-label" id="prepProgressLabel"></span>
+        </div>
+        <div class="prep-tasks-list" id="prepTasksList"></div>
+        <div class="prep-add-row">
+          <input type="text" id="prepTaskInput" placeholder="أضف مهمة..." onkeypress="if(event.key==='Enter') addPrepTask()">
+          <button class="btn btn-filled btn-sm" onclick="addPrepTask()">+ إضافة</button>
+        </div>
       </div>
     </div>
 
@@ -2048,9 +2298,35 @@
       <div class="fsh-section-label" style="margin-bottom:8px">الأعضاء الحاليون</div>
       <div class="fsh-members" id="fshMembers"><div style="color:var(--text-3);font-size:13px">لا يوجد أعضاء بعد</div></div>
     </div>
-    <div class="share-modal-btns">
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div class="fsh-section-label" style="margin-bottom:8px">🔗 رابط مشاركة الملف</div>
+      <div style="font-size:12px;color:var(--subtext);margin-bottom:8px">أي شخص لديه الرابط يمكنه عرض الملف (مشاهدة فقط)</div>
+      <div class="share-link-row" id="fshLinkRow" style="display:none">
+        <input class="share-link-input" id="fshLinkInput" type="text" readonly onclick="this.select()" dir="ltr">
+        <button class="btn btn-glass btn-sm" onclick="fshCopyLink()">نسخ</button>
+      </div>
+      <div class="fsh-status" id="fshLinkStatus"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-glass btn-sm" id="fshLinkRevokeBtn" onclick="fshRevokeLink()" style="display:none;color:#f87171">إلغاء الرابط</button>
+        <button class="btn btn-filled btn-sm" id="fshLinkGenBtn" onclick="fshGenerateLink()">إنشاء رابط</button>
+      </div>
+    </div>
+    <div class="share-modal-btns" style="margin-top:12px">
       <button class="btn btn-glass btn-sm" onclick="closeFolderShare()">إغلاق</button>
     </div>
+  </div>
+</div>
+
+<!-- Folder Link View Page -->
+<div id="folderLinkPage" class="page" style="display:none">
+  <div class="home-wrap" style="max-width:900px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+      <div>
+        <h1 id="flpFolderName" style="margin:0;font-size:22px"></h1>
+        <div style="font-size:13px;color:var(--subtext);margin-top:4px">👁 عرض فقط · مشترك بواسطة <span id="flpOwnerName"></span></div>
+      </div>
+    </div>
+    <div id="flpProjectList" style="display:flex;flex-direction:column;gap:12px"></div>
   </div>
 </div>
 
@@ -2078,6 +2354,9 @@
     <button class="segf-back" onclick="closeSegFull()">←</button>
     <input type="text" class="segf-title-input" id="segfTitle" placeholder="عنوان المقطع"
       oninput="segfSetTitle(this.value)" onchange="autoSave()">
+    <input type="text" class="seg-face-input" id="segfFaceInput" placeholder="الوجه"
+      style="font-size:14px;padding:6px 10px;width:8em"
+      oninput="segfSetFace(this.value)">
     <span class="segf-stats" id="segfStats"></span>
   </div>
   <div class="segf-progress-bar"><div class="segf-progress-fill" id="segfFill" style="width:0%"></div></div>
@@ -2114,13 +2393,56 @@
 
     <!-- Right column: all fields -->
     <div class="sf-fields-col">
+
+      <!-- ─── Inline Teleprompter Panel ─── -->
+      <div id="sfTpPanel" style="display:none">
+        <div class="sf-tp-head">
+          <span class="sf-tp-title">📺 القارئ</span>
+          <div style="display:flex;gap:8px">
+            <button class="sf-tp-ext-btn" onclick="tpOpenDisplay()">🖥 نافذة مستقلة</button>
+            <button class="sf-tp-cls-btn" onclick="closeTp()">✕</button>
+          </div>
+        </div>
+        <div class="sf-tp-controls">
+          <button class="sf-tp-play-btn" id="sfTpPlayBtnT" onclick="tpTogglePlay()">▶ تشغيل</button>
+          <button class="sf-tp-ctrl-btn" onclick="tpReset()">↩ إعادة</button>
+          <div class="sf-tp-slider-grp">
+            <span>السرعة</span>
+            <input type="range" id="sfTpSpeedSliderT" min="0.2" max="5" step="0.1" value="1" oninput="tpSetSpeed(this.value)">
+            <span id="sfTpSpeedValT">1x</span>
+          </div>
+          <div class="sf-tp-slider-grp">
+            <span>الحجم</span>
+            <input type="range" id="sfTpFontSliderT" min="24" max="120" step="4" value="52" oninput="tpSetFont(this.value)">
+            <span id="sfTpFontValT">52px</span>
+          </div>
+          <div class="sf-tp-slider-grp">
+            <span>━</span>
+            <input type="range" id="sfTpLineSlider" min="1" max="100" step="1" value="2" oninput="tpSetLineSize(this.value)">
+            <span id="sfTpLineVal">2px</span>
+          </div>
+        </div>
+        <button class="sf-tp-scroll-btn" onpointerdown="tpStartScroll(-1)" onpointerup="tpStopScroll()" onpointerleave="tpStopScroll()">▲</button>
+        <div class="sf-tp-preview">
+          <div class="sf-tp-fade-top"></div>
+          <div class="sf-tp-reading-line"></div>
+          <div id="sfTpScroll">
+            <div id="sfTpText"></div>
+          </div>
+          <div class="sf-tp-fade-bot"></div>
+        </div>
+        <button class="sf-tp-scroll-btn" onpointerdown="tpStartScroll(1)" onpointerup="tpStopScroll()" onpointerleave="tpStopScroll()">▼</button>
+      </div>
+
       <div class="sf-field">
         <label style="display:flex;align-items:center;justify-content:space-between">
           <span>المحتوى</span>
-          <button onclick="openEditor(sfShotId)" style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);color:var(--subtext);cursor:pointer">✏️ محرر</button>
+          <button onclick="openEditorCurrent()" style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);color:var(--subtext);cursor:pointer">✏️ محرر</button>
+          <button onclick="openTp()" style="font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(100,210,255,0.08);border:1px solid rgba(100,210,255,0.25);color:#64d2ff;cursor:pointer" id="sfTpToggleBtn">📺 القارئ</button>
         </label>
         <textarea id="sfContent" placeholder="وصف محتوى المشهد..." rows="5"></textarea>
       </div>
+
       <div class="sf-row2">
         <div class="sf-field">
           <label>التصوير</label>
@@ -2356,8 +2678,10 @@ function renameFolder(fid) {
 function deleteFolder(fid) {
   if (!confirm('حذف الملف؟ ستبقى التصاوير داخله بدون ملف.')) return;
   const all = loadLS();
-  all.forEach(p => { if (p.folderId === fid) p.folderId = null; });
+  const affected = [];
+  all.forEach(p => { if (p.folderId === fid) { p.folderId = null; p.lastModified = Date.now(); affected.push(p); } });
   storeLS(all);
+  affected.forEach(p => saveProject(p));
   storeFolders(loadFolders().filter(f => f.id !== fid));
   renderHome();
 }
@@ -2403,7 +2727,12 @@ function confirmMove() {
   if (!mfPid) return;
   const all = loadLS();
   const p = all.find(p => p.id === mfPid);
-  if (p) { p.folderId = mfSelected || null; storeLS(all); }
+  if (p) {
+    p.folderId = mfSelected || null;
+    p.lastModified = Date.now();
+    storeLS(all);
+    saveProject(p);
+  }
   closeMoveModal();
   renderHome();
 }
@@ -2706,7 +3035,7 @@ function renderTopProject() {
     <span class="topbar-title">${esc(name)}</span>`;
   document.getElementById('topRight').innerHTML=`
     <span class="save-pill" id="savePill"></span>
-    <button class="btn btn-glass btn-sm" onclick="openShareModal()">🔗 مشاركة</button>
+    <button class="btn btn-glass btn-sm btn-share-mobile-hide" onclick="openShareModal()">🔗 مشاركة</button>
     <button class="btn btn-glass btn-sm mobile-hide" onclick="exportJSON()">تصدير JSON</button>
     <button class="btn btn-green btn-sm mobile-hide" onclick="exportFCP()">⬆ Final Cut Pro</button>`;
 }
@@ -2740,6 +3069,7 @@ function fillForm() {
   document.getElementById('pLocation').value=cur.location||'';
   document.getElementById('pNotes').value=cur.notes||'';
   document.getElementById('gFPS').value=cur.fps||25;
+  renderPrepTasks();
 }
 
 function collectForm() {
@@ -2871,6 +3201,67 @@ async function autoSave() {
 
 function saveFPS() { if(cur){ cur.fps=parseInt(document.getElementById('gFPS').value)||25; autoSave(); } }
 function toggleInfo() { document.getElementById('infoCard').classList.toggle('collapsed'); }
+
+function togglePrepCard() { document.getElementById('prepCard').classList.toggle('collapsed'); }
+
+function renderPrepTasks() {
+  if (!cur) return;
+  const tasks = cur.prepTasks || [];
+  const list  = document.getElementById('prepTasksList');
+  const prog  = document.getElementById('prepProgress');
+  const fill  = document.getElementById('prepProgressFill');
+  const lbl   = document.getElementById('prepProgressLabel');
+  if (!list) return;
+  const done  = tasks.filter(t => t.done).length;
+  const total = tasks.length;
+  if (total > 0) {
+    prog.style.display = 'flex';
+    fill.style.width   = Math.round(done / total * 100) + '%';
+    lbl.textContent    = done + ' / ' + total;
+  } else {
+    prog.style.display = 'none';
+  }
+  list.innerHTML = tasks.map(t => `
+    <div class="prep-task-item${t.done?' done':''}" id="pti-${t.id}">
+      <input type="checkbox" ${t.done?'checked':''} onchange="togglePrepTask('${t.id}')">
+      <span class="prep-task-text" onclick="togglePrepTask('${t.id}')">${esc(t.text)}</span>
+      <button class="prep-task-del" onclick="deletePrepTask('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+function addPrepTask() {
+  if (!cur) return;
+  const inp  = document.getElementById('prepTaskInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!cur.prepTasks) cur.prepTasks = [];
+  cur.prepTasks.push({ id: uid(), text, done: false });
+  inp.value = '';
+  renderPrepTasks();
+  autoSave();
+}
+
+function addPrepTaskPreset(text) {
+  if (!cur) return;
+  if (!cur.prepTasks) cur.prepTasks = [];
+  if (cur.prepTasks.some(t => t.text === text)) return;
+  cur.prepTasks.push({ id: uid(), text, done: false });
+  renderPrepTasks();
+  autoSave();
+}
+
+function togglePrepTask(id) {
+  if (!cur?.prepTasks) return;
+  const t = cur.prepTasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; renderPrepTasks(); autoSave(); }
+}
+
+function deletePrepTask(id) {
+  if (!cur?.prepTasks) return;
+  cur.prepTasks = cur.prepTasks.filter(t => t.id !== id);
+  renderPrepTasks();
+  autoSave();
+}
 
 // ── Segment / Shot helpers ──
 function _allShots() { return (cur.segments||[]).flatMap(s=>s.shots||[]); }
@@ -3134,17 +3525,20 @@ function toggleCollapse(id) {
 
 function addNote(id) {
   const s=_findShot(id); if(!s) return;
+  if(!s.timecodeNotes) s.timecodeNotes=[];
   const inp=document.getElementById('ni-'+id), txt=inp?inp.value.trim():'';
   s.timecodeNotes.push({id:uid(),tc:nowTC(id),text:txt||'—'});
   if(inp) inp.value=''; renderNotes(id); autoSave();
 }
 function addNotePreset(id, text) {
   const s=_findShot(id); if(!s) return;
+  if(!s.timecodeNotes) s.timecodeNotes=[];
   s.timecodeNotes.push({id:uid(),tc:nowTC(id),text});
   renderNotes(id); autoSave();
 }
 function delNote(sid,nid) {
   const s=_findShot(sid); if(!s) return;
+  if(!s.timecodeNotes) s.timecodeNotes=[];
   s.timecodeNotes=s.timecodeNotes.filter(n=>n.id!==nid); renderNotes(sid); autoSave();
 }
 function renderNotes(id) {
@@ -3348,6 +3742,14 @@ function setSegRukn(segId, val) {
   const seg = (cur.segments||[]).find(s => s.id === segId);
   if (seg) { seg.rukn = val; autoSave(); }
 }
+function setSegFace(segId, val) {
+  const seg = (cur.segments||[]).find(s => s.id === segId);
+  if (seg) { seg.face = val; autoSave(); }
+}
+function segfSetFace(val) {
+  const seg = (cur.segments||[]).find(s => s.id === _segfId);
+  if (seg) { seg.face = val; const el = document.getElementById('segface-' + _segfId); if (el) el.value = val; autoSave(); }
+}
 function _isTamraFolder() {
   if (!cur || !cur.folderId) return false;
   const folder = loadFolders().find(f => f.id === cur.folderId);
@@ -3366,10 +3768,13 @@ function buildSegmentHTML(seg) {
       <div class="seg-head-new">
         <div class="seg-head-row1">
           <button class="seg-toggle-new" onclick="toggleSegCollapse('${seg.id}')">▼</button>
-          <span style="font-size:13px;flex-shrink:0">▣</span>
+          <span style="font-size:15px;flex-shrink:0">🎬</span>
           <input type="text" class="seg-title-new" id="segtitle-${seg.id}"
                  value="${esc(seg.title)}" placeholder="عنوان المقطع"
                  oninput="setSegTitle('${seg.id}',this.value)" onchange="autoSave()">
+          <input type="text" class="seg-face-input" id="segface-${seg.id}"
+                 value="${esc(seg.face||'')}" placeholder="الوجه"
+                 oninput="setSegFace('${seg.id}',this.value)">
         </div>
         <div class="seg-head-row2">
           ${_isTamraFolder() ? `<select class="seg-rukn-input" id="segrokn-${seg.id}"
@@ -3817,6 +4222,7 @@ function openSegFull(segId) {
   _segfId = segId;
   document.getElementById('segfOverlay').style.display = 'flex';
   document.getElementById('segfTitle').value = seg.title || '';
+  document.getElementById('segfFaceInput').value = seg.face || '';
   _renderSegFull();
 }
 
@@ -3985,6 +4391,7 @@ function closeShotFull() {
 
 function sfRenderNotes() {
   const s = _findShot(sfShotId); if (!s) return;
+  if (!s.timecodeNotes) s.timecodeNotes = [];
   document.getElementById('sfNotesList').innerHTML = s.timecodeNotes.map(n => `
     <div class="tc-note"><span class="tc-ts">${n.tc}</span><span class="tc-txt">${esc(n.text)}</span>
     <button class="tc-rm" onclick="sfDelNote('${n.id}')">✕</button></div>`).join('');
@@ -3992,6 +4399,7 @@ function sfRenderNotes() {
 
 function sfAddNotePreset(text) {
   const s = _findShot(sfShotId); if (!s) return;
+  if (!s.timecodeNotes) s.timecodeNotes = [];
   s.timecodeNotes.push({id: uid(), tc: nowTC(sfShotId), text});
   sfRenderNotes(); renderNotes(sfShotId); autoSave();
 }
@@ -3999,15 +4407,17 @@ function sfAddNotePreset(text) {
 function sfAddNote() {
   if (!sfShotId) return;
   const inp = document.getElementById('sfNoteInput');
-  const txt = inp.value.trim();
+  const txt = inp ? inp.value.trim() : '';
   const s = _findShot(sfShotId); if (!s) return;
+  if (!s.timecodeNotes) s.timecodeNotes = [];
   s.timecodeNotes.push({id: uid(), tc: nowTC(sfShotId), text: txt || '—'});
-  inp.value = '';
+  if (inp) inp.value = '';
   sfRenderNotes(); renderNotes(sfShotId); autoSave();
 }
 
 function sfDelNote(nid) {
   const s = _findShot(sfShotId); if (!s) return;
+  if (!s.timecodeNotes) s.timecodeNotes = [];
   s.timecodeNotes = s.timecodeNotes.filter(n => n.id !== nid);
   sfRenderNotes(); renderNotes(sfShotId); autoSave();
 }
@@ -4034,8 +4444,8 @@ function sfResetTimer() {
 
 function sfSyncClock() {
   if (!sfShotId || document.getElementById('sfOverlay').style.display === 'none') return;
-  const src = document.getElementById('tcd-' + sfShotId);
-  if (src) document.getElementById('sfTcClock').textContent = src.textContent;
+  // Read directly from timers — works even if expanded card is collapsed/hidden
+  document.getElementById('sfTcClock').textContent = nowTC(sfShotId);
   if (timers[sfShotId]?.running) requestAnimationFrame(sfSyncClock);
 }
 
@@ -4685,6 +5095,89 @@ function renderViewOnly(p) {
 }
 
 // ══════════════════════════════════════════
+//  FOLDER LINK VIEW
+// ══════════════════════════════════════════
+let _flpProjects = [];
+
+async function openFolderLink(shareId) {
+  try {
+    const linkSnap = await getDoc(doc(db, 'sharedFolderLinks', shareId));
+    if (!linkSnap.exists()) { alert('الرابط غير صالح أو تم إلغاؤه.'); location.href = location.pathname; return; }
+    const linkData = linkSnap.data();
+
+    // Fetch projects in this folder from owner's collection
+    const projSnap = await getDocs(query(
+      collection(db, 'users', linkData.ownerUid, 'projects'),
+      where('folderId', '==', linkData.folderId)
+    ));
+    _flpProjects = projSnap.docs.map(d => d.data()).filter(p => !p._deleted);
+
+    document.getElementById('flpFolderName').textContent = linkData.folderName || 'ملف مشترك';
+    document.getElementById('flpOwnerName').textContent = linkData.ownerName || '';
+
+    const list = document.getElementById('flpProjectList');
+    if (_flpProjects.length === 0) {
+      list.innerHTML = '<div style="color:var(--subtext);font-size:14px;text-align:center;padding:40px 0">لا توجد تصاوير في هذا الملف</div>';
+    } else {
+      list.innerHTML = _flpProjects.map((p, i) => `
+        <div onclick="flpOpenProject(${i})" style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='var(--card-bg)'">
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-1)">${esc(p.name||'بدون عنوان')}</div>
+            <div style="font-size:12px;color:var(--subtext);margin-top:4px">${(p.shots||[]).length} مشهد</div>
+          </div>
+          <div style="font-size:20px;color:var(--subtext)">‹</div>
+        </div>`).join('');
+    }
+
+    // Show folder link page
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('folderLinkPage').style.display = '';
+    document.getElementById('folderLinkPage').classList.add('active');
+    document.getElementById('topLeft').innerHTML = `
+      <button class="back-btn" onclick="flpGoBack()">‹ العودة</button>
+      <div class="tb-divider"></div>
+      <span class="topbar-title">${esc(linkData.folderName||'ملف مشترك')}</span>`;
+    document.getElementById('topRight').innerHTML = `<span style="font-size:12px;color:var(--subtext)">👁 عرض فقط</span>`;
+  } catch(e) {
+    console.error('openFolderLink:', e);
+    alert('تعذّر تحميل الملف المشترك.');
+    location.href = location.pathname;
+  }
+}
+
+function flpOpenProject(idx) {
+  const p = _flpProjects[idx];
+  if (!p) return;
+  document.getElementById('folderLinkPage').classList.remove('active');
+  document.getElementById('folderLinkPage').style.display = 'none';
+  _viewOnlyData = p;
+  renderViewOnly(p);
+  // Override back button to return to folder list
+  const backToFolder = () => {
+    document.getElementById('projectPage').classList.remove('active');
+    document.getElementById('folderLinkPage').style.display = '';
+    document.getElementById('folderLinkPage').classList.add('active');
+    document.getElementById('topLeft').innerHTML = `
+      <button class="back-btn" onclick="flpGoBack()">‹ العودة</button>
+      <div class="tb-divider"></div>
+      <span class="topbar-title">${esc(document.getElementById('flpFolderName').textContent)}</span>`;
+    document.getElementById('topRight').innerHTML = `<span style="font-size:12px;color:var(--subtext)">👁 عرض فقط</span>`;
+    document.getElementById('viewonlyBanner').style.display = 'none';
+  };
+  // Replace topLeft back button
+  setTimeout(() => {
+    const btn = document.querySelector('#topLeft .back-btn');
+    if (btn) btn.onclick = backToFolder;
+  }, 50);
+}
+
+function flpGoBack() {
+  document.getElementById('folderLinkPage').classList.remove('active');
+  document.getElementById('folderLinkPage').style.display = 'none';
+  location.href = location.pathname;
+}
+
+// ══════════════════════════════════════════
 //  FOLDER SHARING
 // ══════════════════════════════════════════
 
@@ -4755,8 +5248,93 @@ async function openFolderShare(folderId) {
   document.getElementById('fshEmail').value = '';
   document.getElementById('fshStatus').textContent = '';
   document.getElementById('fshStatus').className = 'fsh-status';
+  document.getElementById('fshLinkStatus').textContent = '';
+  document.getElementById('fshLinkRow').style.display = 'none';
+  document.getElementById('fshLinkRevokeBtn').style.display = 'none';
+  document.getElementById('fshLinkGenBtn').textContent = 'إنشاء رابط';
   document.getElementById('folderShareOverlay').style.display = 'flex';
   await _fshLoadMembers(folderId);
+  await _fshLoadLink(folderId);
+}
+
+async function _fshLoadLink(folderId) {
+  try {
+    const snap = await getDoc(doc(db, 'folderShares', folderId));
+    if (!snap.exists()) return;
+    const linkId = snap.data().publicLinkId;
+    if (linkId) _fshShowLink(linkId);
+  } catch(e) { console.warn('_fshLoadLink:', e); }
+}
+
+function _fshShowLink(linkId) {
+  const url = location.origin + location.pathname + '?folderLink=' + linkId;
+  document.getElementById('fshLinkInput').value = url;
+  document.getElementById('fshLinkRow').style.display = 'flex';
+  document.getElementById('fshLinkRevokeBtn').style.display = '';
+  document.getElementById('fshLinkGenBtn').textContent = 'تجديد الرابط';
+}
+
+async function fshGenerateLink() {
+  if (!_fshFolderId || !fbUser) return;
+  const st = document.getElementById('fshLinkStatus');
+  st.textContent = 'جارٍ الإنشاء...'; st.className = 'fsh-status';
+  try {
+    const folders = loadFolders();
+    const folder = folders.find(f => f.id === _fshFolderId);
+    const linkId = uid();
+    // Store link metadata
+    await setDoc(doc(db, 'sharedFolderLinks', linkId), {
+      shareId: linkId,
+      ownerUid: fbUser.uid,
+      ownerName: fbUser.displayName || fbUser.email,
+      folderId: _fshFolderId,
+      folderName: folder?.name || '',
+      createdAt: Date.now()
+    });
+    // Mark folder as having a public link
+    const shareRef = doc(db, 'folderShares', _fshFolderId);
+    await setDoc(shareRef, {
+      publicLinkEnabled: true,
+      publicLinkId: linkId,
+      ownerUid: fbUser.uid,
+      folderId: _fshFolderId,
+      folderName: folder?.name || ''
+    }, { merge: true });
+    _fshShowLink(linkId);
+    st.textContent = '✓ الرابط جاهز'; st.className = 'fsh-status ok';
+  } catch(e) {
+    st.textContent = 'خطأ: ' + (e.message || e.code); st.className = 'fsh-status err';
+  }
+}
+
+async function fshRevokeLink() {
+  if (!_fshFolderId || !confirm('إلغاء رابط المشاركة؟')) return;
+  const st = document.getElementById('fshLinkStatus');
+  try {
+    const snap = await getDoc(doc(db, 'folderShares', _fshFolderId));
+    if (snap.exists() && snap.data().publicLinkId) {
+      await deleteDoc(doc(db, 'sharedFolderLinks', snap.data().publicLinkId)).catch(() => {});
+    }
+    await setDoc(doc(db, 'folderShares', _fshFolderId), {
+      publicLinkEnabled: false,
+      publicLinkId: null
+    }, { merge: true });
+    document.getElementById('fshLinkRow').style.display = 'none';
+    document.getElementById('fshLinkRevokeBtn').style.display = 'none';
+    document.getElementById('fshLinkGenBtn').textContent = 'إنشاء رابط';
+    st.textContent = 'تم إلغاء الرابط'; st.className = 'fsh-status';
+  } catch(e) {
+    st.textContent = 'خطأ: ' + (e.message || e.code); st.className = 'fsh-status err';
+  }
+}
+
+function fshCopyLink() {
+  const val = document.getElementById('fshLinkInput').value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).catch(() => {});
+  const st = document.getElementById('fshLinkStatus');
+  st.textContent = '✓ تم نسخ الرابط'; st.className = 'fsh-status ok';
+  setTimeout(() => { if (st.textContent.includes('نسخ')) st.textContent = ''; }, 2000);
 }
 
 function closeFolderShare() {
@@ -5133,6 +5711,176 @@ async function createSharedProject(folderId, ownerUid) {
   fillForm(); renderShots(); updateProgress(); renderTopProject();
 }
 
+
+// ══════════════════════════════════════════
+//  TELEPROMPTER
+// ══════════════════════════════════════════
+let tpCh = null, tpWin = null, tpPlaying = false;
+let tpSpeed = 1, tpFontSize = 52, tpScrollY = 0, tpShotId = null;
+
+function tpSend(msg) {
+  tpGetCh().postMessage(msg);
+  if (tpWin && !tpWin.closed) tpWin.postMessage(msg, '*');
+}
+
+function tpGetCh() {
+  if (!tpCh) {
+    tpCh = new BroadcastChannel('musawwir-teleprompter');
+    tpCh.onmessage = ({ data: d }) => {
+      if (d.cmd === 'pos' && !tpPlaying) {
+        const sc = document.getElementById('sfTpScroll');
+        if (!sc) return;
+        const max = sc.scrollHeight - sc.clientHeight;
+        if (max > 0) { tpScrollY = d.pct * max; sc.scrollTop = tpScrollY; }
+      }
+    };
+  }
+  return tpCh;
+}
+
+function openTp() {
+  tpShotId = sfShotId;
+  const s = _findShot(sfShotId);
+  if (!s) return;
+  tpPlaying = false; tpScrollY = 0;
+  const el = document.getElementById('sfTpText');
+  const baseContent = s.contentRich || (s.content ? `<p>${s.content}</p>` : '');
+  const notes = s.timecodeNotes || [];
+  if (notes.length > 0) {
+    const notesHtml = `<div class="tp-tc-notes-section">
+      <div class="tp-tc-notes-title">⏱ الملاحظات الزمنية</div>
+      ${notes.map(n => `<div class="tp-tc-note-item"><span class="tp-tc-note-ts">${n.tc}</span><span>${n.text}</span></div>`).join('')}
+    </div>`;
+    el.innerHTML = baseContent + notesHtml;
+  } else {
+    el.innerHTML = baseContent;
+  }
+  el.style.fontSize = tpFontSize + 'px';
+  document.getElementById('sfTpScroll').scrollTop = 0;
+  tpSyncControls();
+  const panel = document.getElementById('sfTpPanel');
+  panel.style.display = 'flex';
+  tpSend({ cmd: 'load', text: s.contentRich || s.content || '', fontSize: tpFontSize, speed: tpSpeed });
+}
+
+function closeTp() {
+  tpPlaying = false;
+  document.getElementById('sfTpPanel').style.display = 'none';
+  tpSend({ cmd: 'pause' });
+}
+
+function tpSyncControls() {
+  const txt = tpPlaying ? '⏸ إيقاف' : '▶ تشغيل';
+  ['sfTpPlayBtnT', 'sfTpPlayBtnB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = txt; el.classList.toggle('active', tpPlaying); }
+  });
+  ['sfTpSpeedValT', 'sfTpSpeedValB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tpSpeed.toFixed(1) + 'x';
+  });
+  ['sfTpSpeedSliderT', 'sfTpSpeedSliderB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = tpSpeed;
+  });
+  ['sfTpFontValT', 'sfTpFontValB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tpFontSize + 'px';
+  });
+  ['sfTpFontSliderT', 'sfTpFontSliderB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = tpFontSize;
+  });
+}
+
+function tpTogglePlay() {
+  tpPlaying = !tpPlaying;
+  tpSyncControls();
+  tpSend({ cmd: tpPlaying ? 'play' : 'pause' });
+  if (tpPlaying) tpTick();
+}
+
+function tpTick() {
+  if (!tpPlaying) return;
+  const el = document.getElementById('sfTpScroll');
+  tpScrollY += tpSpeed * 0.6;
+  el.scrollTop = tpScrollY;
+  if (tpScrollY < el.scrollHeight) requestAnimationFrame(tpTick);
+  else { tpPlaying = false; tpSyncControls(); }
+}
+
+function tpReset() {
+  tpPlaying = false; tpScrollY = 0;
+  document.getElementById('sfTpScroll').scrollTop = 0;
+  tpSyncControls();
+  tpSend({ cmd: 'reset' });
+}
+
+function tpSetSpeed(v) {
+  tpSpeed = parseFloat(v);
+  tpSyncControls();
+  tpSend({ cmd: 'speed', val: tpSpeed });
+}
+
+function tpSetFont(v) {
+  tpFontSize = parseInt(v);
+  document.getElementById('sfTpText').style.fontSize = tpFontSize + 'px';
+  tpSyncControls();
+  tpSend({ cmd: 'fontSize', val: tpFontSize });
+}
+
+function tpSetLineSize(v) {
+  const px = parseInt(v);
+  const line = document.querySelector('.sf-tp-reading-line');
+  if (line) line.style.height = px + 'px';
+  const lbl = document.getElementById('sfTpLineVal');
+  if (lbl) lbl.textContent = px + 'px';
+  const slider = document.getElementById('sfTpLineSlider');
+  if (slider) slider.value = px;
+  tpSend({ cmd: 'lineSize', val: px });
+}
+
+let _tpScrollTimer = null;
+function tpStartScroll(dir) {
+  tpStopScroll();
+  tpSend({ cmd: 'scrollStart', dir });
+  const step = () => {
+    const el = document.getElementById('sfTpScroll');
+    if (el) el.scrollTop += dir * 4;
+    _tpScrollTimer = requestAnimationFrame(step);
+  };
+  _tpScrollTimer = requestAnimationFrame(step);
+}
+function tpStopScroll() {
+  if (_tpScrollTimer) { cancelAnimationFrame(_tpScrollTimer); _tpScrollTimer = null; }
+  tpSend({ cmd: 'scrollStop' });
+}
+
+document.addEventListener('keydown', e => {
+  const panel = document.getElementById('sfTpPanel');
+  if (!panel || panel.style.display === 'none') return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    tpTogglePlay();
+  } else if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    const el = document.getElementById('sfTpScroll');
+    if (el) { tpScrollY = Math.min(tpScrollY + 60, el.scrollHeight - el.clientHeight); el.scrollTop = tpScrollY; }
+  } else if (e.code === 'ArrowUp') {
+    e.preventDefault();
+    const el = document.getElementById('sfTpScroll');
+    if (el) { tpScrollY = Math.max(tpScrollY - 60, 0); el.scrollTop = tpScrollY; }
+  }
+});
+
+function tpOpenDisplay() {
+  tpWin = window.open('/teleprompter.html', 'tp_display', 'width=1024,height=768');
+  const s = tpShotId ? _findShot(tpShotId) : null;
+  if (s) setTimeout(() => tpSend({ cmd: 'load', text: s.contentRich || s.content || '', fontSize: tpFontSize, speed: tpSpeed }), 800);
+}
+
 // ── Expose to window (needed for type="module") ──
 Object.assign(window, {
   createFolder, renameFolder, deleteFolder, toggleFolderOpen,
@@ -5146,21 +5894,25 @@ Object.assign(window, {
   goHome, addShot, addShotToSeg, addShotToLast, addSegment, deleteSegment, toggleSegCollapse, setSegTitle,
   delShot, toggleDone, setF, toggleTC,
   startTimer, pauseTimer, resetTimer, toggleCollapse,
-  addNote, addNotePreset, sfAddNotePreset, delNote, toggleTcNotes, fmtFilename, saveFPS, toggleInfo, onNameChange, toggleAllSegments, updateDateDisplay,
+  addNote, addNotePreset, sfAddNotePreset, delNote, toggleTcNotes, fmtFilename, saveFPS, toggleInfo, togglePrepCard, addPrepTask, addPrepTaskPreset, togglePrepTask, deletePrepTask, onNameChange, toggleAllSegments, updateDateDisplay,
   exportJSON, importProject, handleImport, importExcel, handleExcelImport, exportFCP, toggleImportDrop,
   openShotFull, closeShotFull, sfAddNote, sfDelNote,
   openSegFull, closeSegFull, segfSetTitle, segfSetField, segfToggleDone, segfAddShot,
-  setSegRukn,
+  setSegRukn, setSegFace, segfSetFace,
   setSyncState,
   sfStartTimer, sfPauseTimer, sfResetTimer,
+  openEditorCurrent: () => openEditor(sfShotId),
   openEditor, closeEditor, execCmd, updateWordCount, handleEditorKey,
   closeFcpModal, fcpBrowseFolder, fcpSetFolder, fcpScanFolder, fcpLaunch, fcpLaunchApp, fcpDownload, fcpBuildXML, fcpOnFolderInput, fcpSetSteps,
   signInGoogle, signOutUser, toggleTheme,
   openShareModal, closeShareModal, generateShare, revokeShare, copyShareLink, claimSharedProject,
   openFolderShare, closeFolderShare, fshInvite, fshChangeRole, fshRemoveMember, fshRemovePending,
+  fshGenerateLink, fshRevokeLink, fshCopyLink,
+  flpOpenProject, flpGoBack,
   toggleSharedFolderOpen, openSharedOrLocal, createSharedProject,
   setViewMode,
   showHome,
+  openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpStartScroll, tpStopScroll,
 });
 
 // ── View toggle buttons (wired directly — no window lookup needed) ──
@@ -5375,7 +6127,7 @@ function updateUserPill(user) {
   const savedTheme = localStorage.getItem('sm_theme') || 'dark';
   applyTheme(savedTheme);
 
-  // Check for share link — works without login
+  // Check for project share link — works without login
   const shareId = new URLSearchParams(location.search).get('share');
   if (shareId) {
     document.getElementById('loginPage').style.display = 'none';
@@ -5393,6 +6145,23 @@ function updateUserPill(user) {
       location.href = location.pathname;
     }
     onAuthStateChanged(auth, user => { fbUser = user; updateUserPill(user); });
+    return;
+  }
+
+  // Check for folder link — requires login to read live data
+  const folderLinkId = new URLSearchParams(location.search).get('folderLink');
+  if (folderLinkId) {
+    document.getElementById('loginPage').style.display = 'none';
+    onAuthStateChanged(auth, async user => {
+      fbUser = user; updateUserPill(user);
+      if (!user) {
+        // Show login prompt
+        const lp = document.getElementById('loginPage');
+        lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
+        return;
+      }
+      await openFolderLink(folderLinkId);
+    });
     return;
   }
 
@@ -5432,11 +6201,12 @@ function updateUserPill(user) {
     // ── Save user profile for email lookup ──
     await saveUserProfile(user).catch(() => {});
 
-    // ── Process any pending invitations for this email ──
-    processPendingInvites(user).catch(() => {});
-
-    // ── Load folders shared with me ──
-    loadMySharedFolders().catch(() => {});
+    // ── Process pending invites → then load shared folders → re-render home ──
+    (async () => {
+      await processPendingInvites(user).catch(() => {});
+      await loadMySharedFolders().catch(() => {});
+      if (document.getElementById('homePage').classList.contains('active')) renderHome();
+    })();
 
     // ── Sync folders: merge remote + local (union by ID) ──
     const remoteFolders = await loadFoldersRemote();
@@ -5500,5 +6270,11 @@ function updateUserPill(user) {
     });
   }
 </script>
+
+<!-- ═══════════════════ TELEPROMPTER CONTROL ═══════════════════ -->
+<div style="display:none" id="tpOverlay">
+</div>
+
+
 </body>
 </html>
