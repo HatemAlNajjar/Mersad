@@ -6051,11 +6051,17 @@ function buildTableViewHTML() {
     const totalShots = seg.shots.length;
     const doneShots = seg.shots.filter(s=>s.done).length;
     const pendingShots = totalShots - doneShots;
+    const segRuknOpts = ruknList.map(r=>`<option value="${r}" ${(seg.rukn||'')===r?'selected':''}>${r}</option>`).join('');
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
       <td>
         <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
       </td>
-      <td colspan="3" style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
+      <td colspan="2" style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
+      <td style="padding:4px 8px" onclick="event.stopPropagation()">
+        <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
+          <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${segRuknOpts}
+        </select>
+      </td>
       <td colspan="2" style="padding:6px 12px">
         <span style="font-size:11px;color:var(--subtext);display:flex;gap:10px;justify-content:flex-end;white-space:nowrap">
           <span title="إجمالي المشاهد">📋 ${totalShots}</span>
@@ -6065,7 +6071,7 @@ function buildTableViewHTML() {
       </td></tr>`;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
-      <th style="width:12%">الوجه / الركن</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
+      <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
     const sortedShots = [...seg.shots];
     if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
     else if (_tableSort === 'rukn') sortedShots.sort((a,b)=>(a.rukn||'').localeCompare(b.rukn||'','ar'));
@@ -6078,13 +6084,9 @@ function buildTableViewHTML() {
           oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
         <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
           oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
-        <td style="padding:0">
+        <td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
-            oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"
-            style="border-bottom:1px solid var(--border)">
-          <select class="st-cell-input st-shot-rukn-sel" onchange="stSet('${s.id}','rukn',this.value);autoSave()">
-            <option value="" ${!s.rukn?'selected':''}>— الركن —</option>${ruknOpts(s.rukn||'')}
-          </select>
+            oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()">
         </td>
         <td style="padding:0">
           <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
