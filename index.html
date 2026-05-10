@@ -1924,7 +1924,9 @@
     font-size: 12px; color: var(--accent);
     border-bottom: 1px solid var(--border);
   }
-  .st-num { color: var(--text-3); font-size: 11px; padding: 0 10px; width: 32px; text-align: center; }
+  .st-num { color: var(--text-3); font-size: 11px; padding: 0 10px; width: 32px; text-align: center; position: relative; }
+  .st-row-drag { position:absolute; bottom:0; left:0; right:0; height:8px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; }
+  .st-row-drag::after { content:""; width:20px; height:2px; background:var(--border); border-radius:2px; display:block; }
   .st-cell-input {
     width: 100%; box-sizing: border-box;
     background: transparent; border: none; outline: none;
@@ -6157,7 +6159,7 @@ function buildTableViewHTML() {
         <div style="display:flex;align-items:center;gap:8px;direction:rtl">
           <span id="st-prog-count-${seg.id}" style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div style="flex:1;min-width:60px;height:5px;background:rgba(52,199,89,0.18);border-radius:3px;overflow:hidden;transform:scaleX(-1)">
-            <div id="st-prog-fill-${seg.id}" style="width:${totalShots?Math.round(doneShots/totalShots*100):0}%;background:var(--green);border-radius:3px;transition:width 0.4s;box-shadow:0 0 6px var(--green-glow)"></div>
+            <div id="st-prog-fill-${seg.id}" style="height:100%;width:${totalShots?Math.round(doneShots/totalShots*100):0}%;background:var(--green);border-radius:3px;transition:width 0.4s;box-shadow:0 0 6px var(--green-glow)"></div>
           </div>
         </div>
       </td></tr>`;
@@ -6171,8 +6173,10 @@ function buildTableViewHTML() {
     else if (_tableSort === 'done') sortedShots.sort((a,b)=>Number(a.done||false)-Number(b.done||false));
     sortedShots.forEach(s => {
       globalIdx++;
-      rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''}">
-        <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
+      rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''};${s._rowHeight?'height:'+s._rowHeight+'px':''}">
+        <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div>
+          <div class="st-row-drag" onclick="event.stopPropagation()" onmousedown="stRowResizeStart(event,'${s.id}')" ontouchstart="stRowResizeStart(event,'${s.id}')"></div>
+        </td>
         <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
           oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
         <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
@@ -6355,6 +6359,31 @@ async function doTextImport() {
   }
 }
 
+function stRowResizeStart(e, shotId) {
+  e.preventDefault(); e.stopPropagation();
+  const tr = document.getElementById('str-' + shotId);
+  if (!tr) return;
+  const startY = e.touches ? e.touches[0].clientY : e.clientY;
+  const startH = tr.offsetHeight;
+  function onMove(ev) {
+    const y = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    const h = Math.max(54, startH + (y - startY));
+    tr.style.height = h + 'px';
+  }
+  function onEnd() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    const s = _findShot(shotId);
+    if (s) { s._rowHeight = parseInt(tr.style.height); autoSave(); }
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+}
+
 // ── Expose to window (needed for type="module") ──
 Object.assign(window, {
   createFolder, renameFolder, deleteFolder, toggleFolderOpen,
@@ -6389,6 +6418,7 @@ Object.assign(window, {
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpFullscreen, tpStartScroll, tpStopScroll,
   sfNavigate, _sfUpdateNavBtns,
+  stRowResizeStart,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
   setTableSort,
   toggleTableView, stSet, stToggleDone, stToggleSeg, stDelShot,
