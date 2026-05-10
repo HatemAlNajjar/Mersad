@@ -6008,7 +6008,7 @@ function buildTableViewHTML() {
     seg.shots.forEach(s => {
       globalIdx++;
       rows += `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
-        <td class="st-num">${globalIdx}</td>
+        <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
         <td><input class="st-cell-input st-title-input" value="${esc(s.title||'')}" placeholder="عنوان المشهد"
           oninput="stSet('${s.id}','title',this.value)" onchange="autoSave()"></td>
         <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
