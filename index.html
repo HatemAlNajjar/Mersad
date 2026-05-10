@@ -6062,12 +6062,13 @@ function buildTableViewHTML() {
           <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${segRuknOpts}
         </select>
       </td>
-      <td colspan="2" style="padding:6px 12px">
-        <span style="font-size:11px;color:var(--subtext);display:flex;gap:10px;justify-content:flex-end;white-space:nowrap">
-          <span title="إجمالي المشاهد">📋 ${totalShots}</span>
-          <span style="color:var(--accent)" title="تم تصويره">✓ ${doneShots}</span>
-          <span style="color:var(--text-3)" title="لم يتم بعد">○ ${pendingShots}</span>
-        </span>
+      <td colspan="2" style="padding:5px 12px" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:8px;direction:ltr">
+          <span style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
+          <div class="p-track" style="flex:1;min-width:60px">
+            <div class="p-fill" style="width:${totalShots?Math.round(doneShots/totalShots*100):0}%"></div>
+          </div>
+        </div>
       </td></tr>`;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
