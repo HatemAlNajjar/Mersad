@@ -6174,7 +6174,7 @@ function buildTableViewHTML() {
     sortedShots.forEach(s => {
       globalIdx++;
       rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''};${s._rowHeight?'height:'+s._rowHeight+'px':''}">
-        <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div>
+        <td class="st-num" title="فتح المشهد" style="cursor:default;user-select:none;position:relative"><div onclick="openShotFull('${s.id}')" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--text-3);cursor:pointer;line-height:1" title="فتح المشهد">⛶</div><div style="padding-top:18px;font-size:11px;cursor:pointer" onclick="openShotFull('${s.id}')">${globalIdx}</div>
           <div class="st-row-drag" onclick="event.stopPropagation()" onmousedown="stRowResizeStart(event,'${s.id}')" ontouchstart="stRowResizeStart(event,'${s.id}')"></div>
         </td>
         <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
