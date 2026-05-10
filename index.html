@@ -6063,10 +6063,6 @@ function buildTableViewHTML() {
   const segs = cur.segments || [];
   const ruknList = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب'];
   const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
-  const segHeader = `<tr class="st-header-row">
-    <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
-    <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
-
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
@@ -6101,7 +6097,9 @@ function buildTableViewHTML() {
           </div>
         </div>
       </td></tr>`;
-    rows += segHeader;
+    rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
+      <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
+      <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
 
     const sortedShots = [...seg.shots];
     if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
