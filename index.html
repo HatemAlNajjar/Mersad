@@ -6048,10 +6048,20 @@ function buildTableViewHTML() {
   let globalIdx = 0;
   segs.forEach(seg => {
     const isCol = !!seg.collapsed;
+    const totalShots = seg.shots.length;
+    const doneShots = seg.shots.filter(s=>s.done).length;
+    const pendingShots = totalShots - doneShots;
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
-      <td colspan="6">
+      <td>
         <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
-        🎬 ${esc(seg.title||'مقطع')}
+      </td>
+      <td colspan="3" style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
+      <td colspan="2" style="padding:6px 12px">
+        <span style="font-size:11px;color:var(--subtext);display:flex;gap:10px;justify-content:flex-end;white-space:nowrap">
+          <span title="إجمالي المشاهد">📋 ${totalShots}</span>
+          <span style="color:var(--accent)" title="تم تصويره">✓ ${doneShots}</span>
+          <span style="color:var(--text-3)" title="لم يتم بعد">○ ${pendingShots}</span>
+        </span>
       </td></tr>`;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
