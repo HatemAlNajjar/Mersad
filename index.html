@@ -3931,6 +3931,9 @@ function _getRuknList() {
   if (name === 'قناة حاتم') return ['تأملات','أدلة','معيشة','كتب','غيرها'];
   return [];
 }
+function _getRuknLabel() {
+  return _getFolderName() === 'قناة حاتم' ? 'السلسلة' : 'الركن';
+}
 
 function buildSegmentHTML(seg) {
   const total=seg.shots.length, done=seg.shots.filter(s=>s.done).length;
@@ -3955,7 +3958,7 @@ function buildSegmentHTML(seg) {
         <div class="seg-head-row2">
           ${_getRuknList().length ? `<select class="seg-rukn-input" id="segrokn-${seg.id}"
                  onchange="setSegRukn('${seg.id}',this.value);autoSave()">
-            <option value="">الركن</option>
+            <option value="">${_getRuknLabel()}</option>
             ${_getRuknList().map(r=>`<option value="${r}" ${(seg.rukn||'')==r?'selected':''}>${r}</option>`).join('')}
           </select>` : '<span style="flex:1"></span>'}
           <div class="seg-progress-wrap" id="seg-prog-${seg.id}">
@@ -4087,7 +4090,7 @@ function _updateFaceOptions() {
     const show = hasRukn ? '' : 'none';
     ruknSel.style.display = show;
     if (ruknDiv) ruknDiv.style.display = show;
-    if (ruknLbl) ruknLbl.style.display = show;
+    if (ruknLbl) { ruknLbl.style.display = show; ruknLbl.textContent = _getRuknLabel(); }
     if (hasRukn) {
       const rukns = [...new Set(
         (cur?.segments||[]).map(sg => (sg.rukn||'').trim()).filter(Boolean)
@@ -6087,7 +6090,7 @@ function buildTableViewHTML() {
       <td style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">🎬 ${esc(seg.title||'مقطع')}</td>
       <td style="padding:3px 6px;white-space:nowrap;width:1%" onclick="event.stopPropagation()">
         <select class="st-rukn-sel" style="font-size:10px;padding:2px 6px" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
-          <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${segRuknOpts}
+          <option value="" ${!seg.rukn?'selected':''}>— ${_getRuknLabel()} —</option>${segRuknOpts}
         </select>
       </td>
       <td style="padding:3px 6px;white-space:nowrap;width:1%" onclick="event.stopPropagation()">
@@ -6293,6 +6296,7 @@ Object.assign(window, {
   openShotFull, closeShotFull, sfAddNote, sfDelNote,
   openSegFull, closeSegFull, segfSetTitle, segfSetField, segfToggleDone, segfAddShot,
   setSegRukn, setSegFace, setSegFaceAll, _segFaceLabel, _refreshSegFaceEl, segfSetFace,
+  _getRuknList, _getRuknLabel, _getFolderName,
   setSyncState,
   sfStartTimer, sfPauseTimer, sfResetTimer,
   openEditorCurrent: () => openEditor(sfShotId),
