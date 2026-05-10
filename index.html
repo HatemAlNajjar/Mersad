@@ -2405,7 +2405,13 @@
     </div>
     <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
       <div class="fsh-section-label" style="margin-bottom:8px">🔗 رابط مشاركة الملف</div>
-      <div style="font-size:12px;color:var(--subtext);margin-bottom:8px">أي شخص لديه الرابط يمكنه عرض الملف (مشاهدة فقط)</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--subtext)">أي شخص لديه الرابط يمكنه</span>
+        <select id="fshLinkRole" class="fsh-role-select" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-1);cursor:pointer">
+          <option value="viewer">المشاهدة فقط</option>
+          <option value="editor">التعديل</option>
+        </select>
+      </div>
       <div class="share-link-row" id="fshLinkRow" style="display:none">
         <input class="share-link-input" id="fshLinkInput" type="text" readonly onclick="this.select()" dir="ltr">
         <button class="btn btn-glass btn-sm" onclick="fshCopyLink()">نسخ</button>
@@ -5319,8 +5325,45 @@ async function openFolderLink(shareId) {
     const linkSnap = await getDoc(doc(db, 'sharedFolderLinks', shareId));
     if (!linkSnap.exists()) { alert('الرابط غير صالح أو تم إلغاؤه.'); location.href = location.pathname; return; }
     const linkData = linkSnap.data();
+    const linkRole = linkData.role || 'viewer';
 
-    // Fetch projects in this folder from owner's collection
+    // If editor link and user is logged in → auto-add as editor member
+    if (linkRole === 'editor' && fbUser) {
+      try {
+        const shareRef = doc(db, 'folderShares', linkData.folderId);
+        const shareSnap = await getDoc(shareRef);
+        const data = shareSnap.exists() ? shareSnap.data() : {};
+        let members    = data.members    || [];
+        let memberUids = data.memberUids || [];
+        let editorUids = data.editorUids || [];
+        if (!memberUids.includes(fbUser.uid)) {
+          members.push({ uid: fbUser.uid, email: fbUser.email, displayName: fbUser.displayName || '', photoURL: fbUser.photoURL || '', role: 'editor' });
+          memberUids.push(fbUser.uid);
+          editorUids.push(fbUser.uid);
+          await setDoc(shareRef, { members, memberUids, editorUids, ownerUid: linkData.ownerUid, folderId: linkData.folderId, folderName: linkData.folderName || '' }, { merge: true });
+          const userShareRef = doc(db, 'userShares', fbUser.uid);
+          const userShareSnap = await getDoc(userShareRef);
+          let list = userShareSnap.exists() ? (userShareSnap.data().list || []) : [];
+          list = list.filter(e => e.folderId !== linkData.folderId);
+          list.push({ folderId: linkData.folderId, ownerUid: linkData.ownerUid, ownerName: linkData.ownerName || '', folderName: linkData.folderName || '', role: 'editor' });
+          await setDoc(userShareRef, { list });
+        }
+        // Load shared folders and go home to show the folder
+        await loadMySharedFolders();
+        location.href = location.pathname;
+        return;
+      } catch(e) { console.warn('openFolderLink editor auto-add:', e); }
+    }
+
+    // If editor link but not logged in → prompt login
+    if (linkRole === 'editor' && !fbUser) {
+      if (confirm('يجب تسجيل الدخول للتعديل. هل تريد تسجيل الدخول الآن؟')) {
+        await signInGoogle();
+        return;
+      }
+    }
+
+    // Viewer mode
     const projSnap = await getDocs(query(
       collection(db, 'users', linkData.ownerUid, 'projects'),
       where('folderId', '==', linkData.folderId)
@@ -5344,7 +5387,6 @@ async function openFolderLink(shareId) {
         </div>`).join('');
     }
 
-    // Show folder link page
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('folderLinkPage').style.display = '';
     document.getElementById('folderLinkPage').classList.add('active');
@@ -5476,46 +5518,48 @@ async function _fshLoadLink(folderId) {
   try {
     const snap = await getDoc(doc(db, 'folderShares', folderId));
     if (!snap.exists()) return;
-    const linkId = snap.data().publicLinkId;
-    if (linkId) _fshShowLink(linkId);
+    const { publicLinkId, publicLinkRole } = snap.data();
+    if (publicLinkId) _fshShowLink(publicLinkId, publicLinkRole || 'viewer');
   } catch(e) { console.warn('_fshLoadLink:', e); }
 }
 
-function _fshShowLink(linkId) {
+function _fshShowLink(linkId, role) {
   const url = location.origin + location.pathname + '?folderLink=' + linkId;
   document.getElementById('fshLinkInput').value = url;
   document.getElementById('fshLinkRow').style.display = 'flex';
   document.getElementById('fshLinkRevokeBtn').style.display = '';
   document.getElementById('fshLinkGenBtn').textContent = 'تجديد الرابط';
+  if (role) document.getElementById('fshLinkRole').value = role;
 }
 
 async function fshGenerateLink() {
   if (!_fshFolderId || !fbUser) return;
   const st = document.getElementById('fshLinkStatus');
+  const role = document.getElementById('fshLinkRole').value;
   st.textContent = 'جارٍ الإنشاء...'; st.className = 'fsh-status';
   try {
     const folders = loadFolders();
     const folder = folders.find(f => f.id === _fshFolderId);
     const linkId = uid();
-    // Store link metadata
     await setDoc(doc(db, 'sharedFolderLinks', linkId), {
       shareId: linkId,
       ownerUid: fbUser.uid,
       ownerName: fbUser.displayName || fbUser.email,
       folderId: _fshFolderId,
       folderName: folder?.name || '',
+      role,
       createdAt: Date.now()
     });
-    // Mark folder as having a public link
     const shareRef = doc(db, 'folderShares', _fshFolderId);
     await setDoc(shareRef, {
       publicLinkEnabled: true,
       publicLinkId: linkId,
+      publicLinkRole: role,
       ownerUid: fbUser.uid,
       folderId: _fshFolderId,
       folderName: folder?.name || ''
     }, { merge: true });
-    _fshShowLink(linkId);
+    _fshShowLink(linkId, role);
     st.textContent = '✓ الرابط جاهز'; st.className = 'fsh-status ok';
   } catch(e) {
     st.textContent = 'خطأ: ' + (e.message || e.code); st.className = 'fsh-status err';
@@ -5634,13 +5678,20 @@ async function fshInvite() {
 
     // Get current share doc
     const shareRef = doc(db, 'folderShares', _fshFolderId);
-    const shareSnap = await getDoc(shareRef);
+    let shareSnap;
+    try {
+      shareSnap = await getDoc(shareRef);
+    } catch(e) { throw new Error('[step1-read-folderShares] ' + e.message); }
+
     let members    = shareSnap.exists() ? (shareSnap.data().members    || []) : [];
     let memberUids = shareSnap.exists() ? (shareSnap.data().memberUids || []) : [];
     let editorUids = shareSnap.exists() ? (shareSnap.data().editorUids || []) : [];
 
     // Look up the user by email in userProfiles
-    const userSnap = await getDocs(query(collection(db, 'userProfiles'), where('email', '==', email)));
+    let userSnap;
+    try {
+      userSnap = await getDocs(query(collection(db, 'userProfiles'), where('email', '==', email)));
+    } catch(e) { throw new Error('[step2-read-userProfiles] ' + e.message); }
 
     if (userSnap.empty) {
       // ── User not found → store as pending invite ──
@@ -5656,23 +5707,27 @@ async function fshInvite() {
         folderName,
         role
       });
-      await setDoc(pendingRef, { invites: pendingList });
+      try {
+        await setDoc(pendingRef, { invites: pendingList });
+      } catch(e) { throw new Error('[step3-write-pendingInvites] ' + e.message); }
 
       // Also store in share doc as pending so owner can see
       let pending = shareSnap.exists() ? (shareSnap.data().pendingEmails || []) : [];
       pending = pending.filter(e => e.email !== email);
       pending.push({ email, role });
-      await setDoc(shareRef, {
-        ownerUid: fbUser.uid,
-        ownerEmail: fbUser.email,
-        ownerName: fbUser.displayName || '',
-        folderId: _fshFolderId,
-        folderName,
-        members,
-        memberUids,
-        editorUids,
-        pendingEmails: pending
-      }, { merge: true });
+      try {
+        await setDoc(shareRef, {
+          ownerUid: fbUser.uid,
+          ownerEmail: fbUser.email,
+          ownerName: fbUser.displayName || '',
+          folderId: _fshFolderId,
+          folderName,
+          members,
+          memberUids,
+          editorUids,
+          pendingEmails: pending
+        }, { merge: true });
+      } catch(e) { throw new Error('[step4-write-folderShares-pending] ' + e.message); }
 
       status.className = 'fsh-status ok';
       status.textContent = `✓ تم إرسال دعوة إلى ${email} — ستُفعَّل عند أول تسجيل دخول له`;
@@ -5705,21 +5760,27 @@ async function fshInvite() {
     if (role === 'editor') editorUids.push(memberUid);
 
     // Save folderShares doc
-    await setDoc(shareRef, {
-      ownerUid: fbUser.uid,
-      ownerEmail: fbUser.email,
-      ownerName: fbUser.displayName || '',
-      folderId: _fshFolderId,
-      folderName,
-      members,
-      memberUids,
-      editorUids,
-      pendingEmails: pending
-    }, { merge: true });
+    try {
+      await setDoc(shareRef, {
+        ownerUid: fbUser.uid,
+        ownerEmail: fbUser.email,
+        ownerName: fbUser.displayName || '',
+        folderId: _fshFolderId,
+        folderName,
+        members,
+        memberUids,
+        editorUids,
+        pendingEmails: pending
+      }, { merge: true });
+    } catch(e) { throw new Error('[step5-write-folderShares] ' + e.message); }
 
     // Update member's userShares so they can discover this folder
     const userShareRef = doc(db, 'userShares', memberUid);
-    const userShareSnap = await getDoc(userShareRef);
+    let userShareSnap;
+    try {
+      userShareSnap = await getDoc(userShareRef);
+    } catch(e) { throw new Error('[step6-read-userShares] ' + e.message); }
+
     let userShareList = userShareSnap.exists() ? (userShareSnap.data().list || []) : [];
     userShareList = userShareList.filter(e => e.folderId !== _fshFolderId);
     userShareList.push({
@@ -5730,7 +5791,9 @@ async function fshInvite() {
       folderName,
       role
     });
-    await setDoc(userShareRef, { list: userShareList });
+    try {
+      await setDoc(userShareRef, { list: userShareList });
+    } catch(e) { throw new Error('[step7-write-userShares] ' + e.message); }
 
     status.className = 'fsh-status ok';
     status.textContent = `✓ تمت دعوة ${memberData.displayName || email} كـ${role === 'editor' ? 'محرر' : 'مشاهد'}`;
