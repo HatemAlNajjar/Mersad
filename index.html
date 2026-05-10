@@ -3893,6 +3893,25 @@ function setSegFace(segId, val) {
   const seg = (cur.segments||[]).find(s => s.id === segId);
   if (seg) { seg.face = val; autoSave(); }
 }
+function setSegFaceAll(segId, val) {
+  const seg = (cur.segments||[]).find(s => s.id === segId);
+  if (!seg) return;
+  seg.shots.forEach(s => s.face = val);
+  autoSave();
+}
+function _segFaceLabel(seg) {
+  const faces = (seg.shots||[]).map(s => s.face||'');
+  if (!faces.length) return { val:'', ph:'الوجه' };
+  const allSame = faces.every(f => f === faces[0]);
+  return allSame ? { val: faces[0], ph:'الوجه' } : { val:'', ph:'متعدد' };
+}
+function _refreshSegFaceEl(segId) {
+  const seg = (cur.segments||[]).find(s => s.id === segId);
+  const el = document.getElementById('st-seg-face-'+segId);
+  if (!seg || !el) return;
+  const {val,ph} = _segFaceLabel(seg);
+  el.value = val; el.placeholder = ph;
+}
 function segfSetFace(val) {
   const seg = (cur.segments||[]).find(s => s.id === _segfId);
   if (seg) { seg.face = val; const el = document.getElementById('segface-' + _segfId); if (el) el.value = val; autoSave(); }
@@ -6056,13 +6075,21 @@ function buildTableViewHTML() {
       <td>
         <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
       </td>
-      <td colspan="2" style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
+      <td style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
       <td style="padding:4px 8px" onclick="event.stopPropagation()">
         <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
           <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${segRuknOpts}
         </select>
       </td>
-      <td colspan="2" style="padding:5px 12px" onclick="event.stopPropagation()">
+      <td style="padding:4px 8px" onclick="event.stopPropagation()">
+        <input id="st-seg-face-${seg.id}" class="st-cell-input st-face-input"
+          value="${(()=>{const {val}=_segFaceLabel(seg);return esc(val);})()}"
+          placeholder="${(()=>{const {ph}=_segFaceLabel(seg);return ph;})()}"
+          oninput="setSegFaceAll('${seg.id}',this.value)"
+          onchange="autoSave()"
+          style="font-size:12px">
+      </td>
+      <td style="padding:5px 12px" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;direction:ltr">
           <span style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div class="p-track" style="flex:1;min-width:60px">
@@ -6087,7 +6114,7 @@ function buildTableViewHTML() {
           oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
         <td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
-            oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()">
+            oninput="stSet('${s.id}','face',this.value);_refreshSegFaceEl('${seg.id}')" onchange="autoSave()">
         </td>
         <td style="padding:0">
           <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
@@ -6246,7 +6273,7 @@ Object.assign(window, {
   exportJSON, importProject, handleImport, importExcel, handleExcelImport, exportFCP, toggleImportDrop,
   openShotFull, closeShotFull, sfAddNote, sfDelNote,
   openSegFull, closeSegFull, segfSetTitle, segfSetField, segfToggleDone, segfAddShot,
-  setSegRukn, setSegFace, segfSetFace,
+  setSegRukn, setSegFace, setSegFaceAll, _segFaceLabel, _refreshSegFaceEl, segfSetFace,
   setSyncState,
   sfStartTimer, sfPauseTimer, sfResetTimer,
   openEditorCurrent: () => openEditor(sfShotId),
