@@ -3545,8 +3545,13 @@ function addShotToSeg(segId) {
   const seg=(cur.segments||[]).find(s=>s.id===segId); if(!seg) return;
   const s={id:uid(),title:'مشهد '+(_globalShotCount()+1),done:false,content:'',contentRich:'',shooting:'',editMusic:'',filename:'',filename2:'',timecodeNotes:[],tcOpen:false,collapsed:false};
   seg.shots.push(s);
-  const body=document.getElementById('segbody-'+segId);
-  if(body){ body.innerHTML=buildSegBodyHTML(seg); syncRunningTimers(); }
+  if (_tableView) {
+    const list = document.getElementById('shotList');
+    if (list) list.innerHTML = buildTableViewHTML();
+  } else {
+    const body=document.getElementById('segbody-'+segId);
+    if(body){ body.innerHTML=buildSegBodyHTML(seg); syncRunningTimers(); }
+  }
   updateProgress(); autoSave();
   setTimeout(()=>{ const el=document.getElementById('sname-'+s.id); if(el){el.focus();el.select();} },60);
 }
@@ -6147,7 +6152,7 @@ function buildTableViewHTML() {
     <tfoot>
       <tr>
         <td colspan="6" style="padding:10px 12px;border-top:1px solid var(--border)">
-          <button onclick="addShotToLast();renderShots()" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--subtext);font-size:12px;padding:6px 18px;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">+ إضافة مشهد</button>
+          <button onclick="addShotToLast()" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--subtext);font-size:12px;padding:6px 18px;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">+ إضافة مشهد</button>
         </td>
       </tr>
     </tfoot>
