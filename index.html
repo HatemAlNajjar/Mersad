@@ -3415,8 +3415,33 @@ function toggleSegCollapse(segId) {
   autoSave();
 }
 
+function stToggleSeg(segId) {
+  const seg = (cur.segments||[]).find(s => s.id === segId);
+  if (!seg) return;
+  seg.collapsed = !seg.collapsed;
+  document.querySelectorAll('.st-seg-sub-' + segId).forEach(el => {
+    el.style.display = seg.collapsed ? 'none' : '';
+  });
+  const arr = document.getElementById('st-arr-' + segId);
+  if (arr) arr.style.transform = seg.collapsed ? 'rotate(-90deg)' : 'rotate(0)';
+  autoSave();
+}
+
 function toggleAllSegments() {
   const segs = cur.segments || [];
+  if (_tableView) {
+    const allCollapsed = segs.every(s => s.collapsed);
+    segs.forEach(seg => {
+      seg.collapsed = !allCollapsed;
+      document.querySelectorAll('.st-seg-sub-' + seg.id).forEach(el => {
+        el.style.display = seg.collapsed ? 'none' : '';
+      });
+      const arr = document.getElementById('st-arr-' + seg.id);
+      if (arr) arr.style.transform = seg.collapsed ? 'rotate(-90deg)' : 'rotate(0)';
+    });
+    autoSave();
+    return;
+  }
   const allCollapsed = segs.every(s => s.collapsed);
   segs.forEach(seg => {
     seg.collapsed = !allCollapsed;
@@ -6006,14 +6031,7 @@ function tpOpenDisplay() {
 // ── Table View ──
 let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 
-const _stHeaderRow = `<tr class="st-header-row">
-      <th style="width:36px">#</th>
-      <th style="width:14%">المشهد</th>
-      <th style="width:42%">المحتوى</th>
-      <th style="width:10%">الوجه</th>
-      <th style="width:16%">الملفات</th>
-      <th style="width:44px">✓</th>
-    </tr>`;
+
 
 function buildTableViewHTML() {
   const segs = cur.segments || [];
@@ -6022,16 +6040,23 @@ function buildTableViewHTML() {
   segs.forEach(seg => {
     const ruknOpts = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب']
       .map(r=>`<option value="${r}" ${(seg.rukn||''===r)?'selected':''}>${r}</option>`).join('');
-    rows += `<tr class="st-seg-row"><td colspan="4">🎬 ${esc(seg.title||'مقطع')}</td>
-      <td colspan="2" style="padding:6px 10px">
+    const isCol = !!seg.collapsed;
+    rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
+      <td colspan="4">
+        <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
+        🎬 ${esc(seg.title||'مقطع')}
+      </td>
+      <td colspan="2" style="padding:6px 10px" onclick="event.stopPropagation()">
         <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
           <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${ruknOpts}
         </select>
       </td></tr>`;
-    rows += _stHeaderRow;
+    rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
+      <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:42%">المحتوى</th>
+      <th style="width:10%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
     seg.shots.forEach(s => {
       globalIdx++;
-      rows += `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
+      rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''}">
         <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
         <td><input class="st-cell-input st-title-input" value="${esc(s.title||'')}" placeholder="عنوان المشهد"
           oninput="stSet('${s.id}','title',this.value)" onchange="autoSave()"></td>
@@ -6195,7 +6220,7 @@ Object.assign(window, {
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpStartScroll, tpStopScroll,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
-  toggleTableView, stSet, stToggleDone,
+  toggleTableView, stSet, stToggleDone, stToggleSeg,
 });
 
 // ── View toggle buttons (wired directly — no window lookup needed) ──
