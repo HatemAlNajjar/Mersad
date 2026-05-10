@@ -5634,13 +5634,20 @@ async function fshInvite() {
 
     // Get current share doc
     const shareRef = doc(db, 'folderShares', _fshFolderId);
-    const shareSnap = await getDoc(shareRef);
+    let shareSnap;
+    try {
+      shareSnap = await getDoc(shareRef);
+    } catch(e) { throw new Error('[step1-read-folderShares] ' + e.message); }
+
     let members    = shareSnap.exists() ? (shareSnap.data().members    || []) : [];
     let memberUids = shareSnap.exists() ? (shareSnap.data().memberUids || []) : [];
     let editorUids = shareSnap.exists() ? (shareSnap.data().editorUids || []) : [];
 
     // Look up the user by email in userProfiles
-    const userSnap = await getDocs(query(collection(db, 'userProfiles'), where('email', '==', email)));
+    let userSnap;
+    try {
+      userSnap = await getDocs(query(collection(db, 'userProfiles'), where('email', '==', email)));
+    } catch(e) { throw new Error('[step2-read-userProfiles] ' + e.message); }
 
     if (userSnap.empty) {
       // ── User not found → store as pending invite ──
@@ -5656,23 +5663,27 @@ async function fshInvite() {
         folderName,
         role
       });
-      await setDoc(pendingRef, { invites: pendingList });
+      try {
+        await setDoc(pendingRef, { invites: pendingList });
+      } catch(e) { throw new Error('[step3-write-pendingInvites] ' + e.message); }
 
       // Also store in share doc as pending so owner can see
       let pending = shareSnap.exists() ? (shareSnap.data().pendingEmails || []) : [];
       pending = pending.filter(e => e.email !== email);
       pending.push({ email, role });
-      await setDoc(shareRef, {
-        ownerUid: fbUser.uid,
-        ownerEmail: fbUser.email,
-        ownerName: fbUser.displayName || '',
-        folderId: _fshFolderId,
-        folderName,
-        members,
-        memberUids,
-        editorUids,
-        pendingEmails: pending
-      }, { merge: true });
+      try {
+        await setDoc(shareRef, {
+          ownerUid: fbUser.uid,
+          ownerEmail: fbUser.email,
+          ownerName: fbUser.displayName || '',
+          folderId: _fshFolderId,
+          folderName,
+          members,
+          memberUids,
+          editorUids,
+          pendingEmails: pending
+        }, { merge: true });
+      } catch(e) { throw new Error('[step4-write-folderShares-pending] ' + e.message); }
 
       status.className = 'fsh-status ok';
       status.textContent = `✓ تم إرسال دعوة إلى ${email} — ستُفعَّل عند أول تسجيل دخول له`;
@@ -5705,21 +5716,27 @@ async function fshInvite() {
     if (role === 'editor') editorUids.push(memberUid);
 
     // Save folderShares doc
-    await setDoc(shareRef, {
-      ownerUid: fbUser.uid,
-      ownerEmail: fbUser.email,
-      ownerName: fbUser.displayName || '',
-      folderId: _fshFolderId,
-      folderName,
-      members,
-      memberUids,
-      editorUids,
-      pendingEmails: pending
-    }, { merge: true });
+    try {
+      await setDoc(shareRef, {
+        ownerUid: fbUser.uid,
+        ownerEmail: fbUser.email,
+        ownerName: fbUser.displayName || '',
+        folderId: _fshFolderId,
+        folderName,
+        members,
+        memberUids,
+        editorUids,
+        pendingEmails: pending
+      }, { merge: true });
+    } catch(e) { throw new Error('[step5-write-folderShares] ' + e.message); }
 
     // Update member's userShares so they can discover this folder
     const userShareRef = doc(db, 'userShares', memberUid);
-    const userShareSnap = await getDoc(userShareRef);
+    let userShareSnap;
+    try {
+      userShareSnap = await getDoc(userShareRef);
+    } catch(e) { throw new Error('[step6-read-userShares] ' + e.message); }
+
     let userShareList = userShareSnap.exists() ? (userShareSnap.data().list || []) : [];
     userShareList = userShareList.filter(e => e.folderId !== _fshFolderId);
     userShareList.push({
@@ -5730,7 +5747,9 @@ async function fshInvite() {
       folderName,
       role
     });
-    await setDoc(userShareRef, { list: userShareList });
+    try {
+      await setDoc(userShareRef, { list: userShareList });
+    } catch(e) { throw new Error('[step7-write-userShares] ' + e.message); }
 
     status.className = 'fsh-status ok';
     status.textContent = `✓ تمت دعوة ${memberData.displayName || email} كـ${role === 'editor' ? 'محرر' : 'مشاهد'}`;
