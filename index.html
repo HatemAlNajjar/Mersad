@@ -6696,6 +6696,8 @@ function updateUserPill(user) {
     setTimeout(() => errDiv.remove(), 8000);
   }
 
+  let _userSharesUnsub = null;
+
   onAuthStateChanged(auth, async user => {
     fbUser = user;
     updateUserPill(user);
@@ -6704,6 +6706,8 @@ function updateUserPill(user) {
       // Not logged in → hide login overlay, show home in guest mode
       document.getElementById('loginPage').style.display = 'none';
       document.getElementById('projectPage').classList.remove('active');
+      if (_userSharesUnsub) { _userSharesUnsub(); _userSharesUnsub = null; }
+      _sharedFolders = [];
       showHome();
       return;
     }
@@ -6720,6 +6724,13 @@ function updateUserPill(user) {
       await loadMySharedFolders().catch(() => {});
       if (document.getElementById('homePage').classList.contains('active')) renderHome();
     })();
+
+    // ── Real-time listener: update shared folders whenever owner adds this user ──
+    if (_userSharesUnsub) _userSharesUnsub();
+    _userSharesUnsub = onSnapshot(doc(db, 'userShares', user.uid), async () => {
+      await loadMySharedFolders().catch(() => {});
+      if (document.getElementById('homePage').classList.contains('active')) renderHome();
+    }, err => { console.warn('userShares snapshot:', err); });
 
     // ── Sync folders: merge remote + local (union by ID) ──
     const remoteFolders = await loadFoldersRemote();
