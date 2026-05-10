@@ -1024,6 +1024,12 @@
       font-family: inherit; padding: 10px 13px;
     }
     .sf-field input:focus { outline: none; border-color: var(--accent); }
+    .sf-field select {
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 14px;
+      font-family: inherit; padding: 10px 13px; outline: none; cursor: pointer;
+    }
+    .sf-field select:focus { border-color: var(--accent); }
     .sf-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .sf-tc-section {
       display: flex; flex-direction: column; gap: 12px;
@@ -2566,9 +2572,24 @@
           <textarea id="sfEditMusic" placeholder="المونتاج، الموسيقى، المؤثرات..."></textarea>
         </div>
       </div>
-      <div class="sf-field">
-        <label>الوجه</label>
-        <input type="text" id="sfFace" placeholder="اسم الشخص أو الوجه في المشهد...">
+      <div class="sf-row2">
+        <div class="sf-field">
+          <label>الوجه</label>
+          <input type="text" id="sfFace" placeholder="اسم الشخص أو الوجه في المشهد...">
+        </div>
+        <div class="sf-field">
+          <label>الركن</label>
+          <select id="sfRukn">
+            <option value="">— الركن —</option>
+            <option value="الشرح البودكاستي">الشرح البودكاستي</option>
+            <option value="اشرح لي في دقيقة">اشرح لي في دقيقة</option>
+            <option value="الإعلانات">الإعلانات</option>
+            <option value="الشرح المباشر">الشرح المباشر</option>
+            <option value="اسأل واستثمر">اسأل واستثمر</option>
+            <option value="مزايا التطبيق">مزايا التطبيق</option>
+            <option value="في المكتب">في المكتب</option>
+          </select>
+        </div>
       </div>
       <div class="sf-row2">
         <div class="sf-field">
@@ -3918,12 +3939,7 @@ function buildSegmentHTML(seg) {
                  oninput="setSegFace('${seg.id}',this.value)">
         </div>
         <div class="seg-head-row2">
-          ${_isTamraFolder() ? `<select class="seg-rukn-input" id="segrokn-${seg.id}"
-                 onchange="setSegRukn('${seg.id}',this.value);autoSave()">
-            <option value="">الركن</option>
-            ${['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب']
-              .map(r=>`<option value="${r}" ${(seg.rukn||'')==r?'selected':''}>${r}</option>`).join('')}
-          </select>` : '<span style="flex:1"></span>'}
+          <span style="flex:1"></span>
           <div class="seg-progress-wrap" id="seg-prog-${seg.id}">
             <svg class="seg-progress-ring" viewBox="0 0 32 32">
               <circle class="seg-ring-bg" cx="16" cy="16" r="${r}"/>
@@ -4474,7 +4490,7 @@ function segfToggleDone(shotId, checked) {
 function segfAddShot() {
   const seg = (cur.segments||[]).find(s => s.id === _segfId);
   if (!seg) return;
-  const shot = {id:uid(),title:'',content:'',shooting:'',editMusic:'',face:'',filename:'',filename2:'',done:false,notes:[]};
+  const shot = {id:uid(),title:'',content:'',shooting:'',editMusic:'',face:'',rukn:'',filename:'',filename2:'',done:false,notes:[]};
   seg.shots.push(shot);
   autoSave();
   _renderSegFull();
@@ -4499,6 +4515,7 @@ function openShotFull(id) {
   document.getElementById('sfFilename').value = s.filename || '';
   document.getElementById('sfFilename2').value = s.filename2 || '';
   document.getElementById('sfFace').value = s.face || '';
+  document.getElementById('sfRukn').value = s.rukn || '';
   document.getElementById('sfDoneCb').checked = !!s.done;
 
   // sync timecode clock
@@ -4523,6 +4540,7 @@ function openShotFull(id) {
   bind('sfFilename',   'filename');
   bind('sfFilename2',  'filename2');
   bind('sfFace',       'face');
+  bind('sfRukn',       'rukn');
   document.getElementById('sfDoneCb').onchange = () => {
     const s = _findShot(sfShotId);
     if (s) { s.done = document.getElementById('sfDoneCb').checked; updateProgress(); renderShots(); autoSave(); }
