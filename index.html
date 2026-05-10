@@ -6044,20 +6044,31 @@ function buildTableViewHTML() {
   const segs = cur.segments || [];
   const ruknList = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب'];
   const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
+  const sortLabels = { order:'#', face:'الوجه', rukn:'الركن', done:'الحالة' };
 
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
     const isCol = !!seg.collapsed;
+    const sortBtns = Object.entries(sortLabels).map(([k,v]) =>
+      `<button onclick="event.stopPropagation();setTableSort('${k}')" style="background:${_tableSort===k?'var(--accent)':'transparent'};color:${_tableSort===k?'#fff':'var(--subtext)'};border:1px solid ${_tableSort===k?'var(--accent)':'var(--border)'};border-radius:5px;font-size:10px;padding:2px 7px;cursor:pointer;line-height:1.6">${v}</button>`
+    ).join('');
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
-      <td colspan="6">
+      <td colspan="4">
         <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
         🎬 ${esc(seg.title||'مقطع')}
+      </td>
+      <td colspan="2" style="padding:4px 10px;text-align:left" onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">${sortBtns}</div>
       </td></tr>`;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
       <th style="width:12%">الوجه / الركن</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
-    seg.shots.forEach(s => {
+    const sortedShots = [...seg.shots];
+    if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
+    else if (_tableSort === 'rukn') sortedShots.sort((a,b)=>(a.rukn||'').localeCompare(b.rukn||'','ar'));
+    else if (_tableSort === 'done') sortedShots.sort((a,b)=>Number(a.done||false)-Number(b.done||false));
+    sortedShots.forEach(s => {
       globalIdx++;
       rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''}">
         <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
