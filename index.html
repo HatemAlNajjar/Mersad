@@ -6178,9 +6178,11 @@ function buildTableViewHTML() {
           <div class="st-row-drag" onclick="event.stopPropagation()" onmousedown="stRowResizeStart(event,'${s.id}')" ontouchstart="stRowResizeStart(event,'${s.id}')"></div>
         </td>
         <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
-          oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
+          style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
+          oninput="stSet('${s.id}','title',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
         <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
-          oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
+          style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
+          oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
         <td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
             oninput="stSet('${s.id}','face',this.value);_refreshSegFaceEl('${seg.id}')" onchange="autoSave()">
@@ -6369,6 +6371,7 @@ function stRowResizeStart(e, shotId) {
     const y = ev.touches ? ev.touches[0].clientY : ev.clientY;
     const h = Math.max(54, startH + (y - startY));
     tr.style.height = h + 'px';
+    tr.querySelectorAll('textarea').forEach(ta => { ta.style.height = Math.max(32, h - 20) + 'px'; });
   }
   function onEnd() {
     document.removeEventListener('mousemove', onMove);
