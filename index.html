@@ -6141,8 +6141,11 @@ function buildTableViewHTML() {
           <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
             oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
         </td>
-        <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
-          onchange="stToggleDone('${s.id}',this.checked)"></td>
+        <td class="st-done-cell">
+          <button onclick="stDelShot('${s.id}')" title="حذف المشهد" style="display:block;width:100%;background:none;border:none;cursor:pointer;color:var(--text-3);font-size:11px;padding:2px;line-height:1;margin-bottom:4px" onmouseover="this.style.color='#e55'" onmouseout="this.style.color='var(--text-3)'">✕</button>
+          <input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
+          onchange="stToggleDone('${s.id}',this.checked)">
+        </td>
       </tr>`;
     });
   });
@@ -6162,6 +6165,24 @@ function buildTableViewHTML() {
 function stSet(shotId, field, val) {
   const s = _findShot(shotId); if (!s) return;
   s[field] = val;
+}
+
+function stDelShot(shotId) {
+  if (!confirm('حذف هذا المشهد؟')) return;
+  let deletedShot = null, parentSegTitle = '';
+  for (const seg of (cur.segments||[])) {
+    const sh = seg.shots.find(s => s.id === shotId);
+    if (sh) { deletedShot = sh; parentSegTitle = seg.title||''; break; }
+  }
+  for (const seg of (cur.segments||[])) { seg.shots = seg.shots.filter(s => s.id !== shotId); }
+  if (deletedShot) {
+    if (!cur._trash) cur._trash = {};
+    if (!cur._trash.shots) cur._trash.shots = [];
+    cur._trash.shots.unshift({ ...deletedShot, _deletedAt: Date.now(), _parentSeg: parentSegTitle });
+  }
+  const list = document.getElementById('shotList');
+  if (list) list.innerHTML = buildTableViewHTML();
+  updateProgress(); autoSave();
 }
 
 function stToggleDone(shotId, checked) {
@@ -6318,7 +6339,7 @@ Object.assign(window, {
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpStartScroll, tpStopScroll,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
   setTableSort,
-  toggleTableView, stSet, stToggleDone, stToggleSeg,
+  toggleTableView, stSet, stToggleDone, stToggleSeg, stDelShot,
 });
 
 // ── View toggle buttons (wired directly — no window lookup needed) ──
