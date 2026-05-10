@@ -6076,24 +6076,24 @@ function buildTableViewHTML() {
     const pendingShots = totalShots - doneShots;
     const segRuknOpts = ruknList.map(r=>`<option value="${r}" ${(seg.rukn||'')===r?'selected':''}>${r}</option>`).join('');
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
-      <td>
+      <td style="white-space:nowrap;width:36px">
         <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
       </td>
-      <td style="font-weight:600">🎬 ${esc(seg.title||'مقطع')}</td>
-      <td style="padding:4px 8px" onclick="event.stopPropagation()">
-        <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
+      <td style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">🎬 ${esc(seg.title||'مقطع')}</td>
+      <td style="padding:3px 6px;white-space:nowrap;width:1%" onclick="event.stopPropagation()">
+        <select class="st-rukn-sel" style="font-size:10px;padding:2px 6px" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
           <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${segRuknOpts}
         </select>
       </td>
-      <td style="padding:4px 8px" onclick="event.stopPropagation()">
+      <td style="padding:3px 6px;white-space:nowrap;width:1%" onclick="event.stopPropagation()">
         <input id="st-seg-face-${seg.id}" class="st-cell-input st-face-input"
           value="${(()=>{const {val}=_segFaceLabel(seg);return esc(val);})()}"
           placeholder="${(()=>{const {ph}=_segFaceLabel(seg);return ph;})()}"
           oninput="setSegFaceAll('${seg.id}',this.value)"
           onchange="autoSave()"
-          style="font-size:12px">
+          style="font-size:11px;padding:3px 8px">
       </td>
-      <td style="padding:5px 12px" onclick="event.stopPropagation()">
+      <td style="padding:4px 12px;white-space:nowrap" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;direction:ltr">
           <span style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div class="p-track" style="flex:1;min-width:60px">
