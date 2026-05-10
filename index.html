@@ -6091,9 +6091,9 @@ function buildTableViewHTML() {
       </td>
       <td style="padding:4px 12px;white-space:nowrap" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;direction:ltr">
-          <span style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
+          <span id="st-prog-count-${seg.id}" style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div class="p-track" style="flex:1;min-width:60px">
-            <div class="p-fill" style="width:${totalShots?Math.round(doneShots/totalShots*100):0}%"></div>
+            <div id="st-prog-fill-${seg.id}" class="p-fill" style="width:${totalShots?Math.round(doneShots/totalShots*100):0}%"></div>
           </div>
         </div>
       </td></tr>`;
@@ -6152,6 +6152,15 @@ function stToggleDone(shotId, checked) {
   s.done = checked;
   const row = document.getElementById('str-'+shotId);
   if (row) row.classList.toggle('done-row', checked);
+  // Refresh segment progress in table view
+  const seg = (cur.segments||[]).find(sg => sg.shots.some(sh => sh.id === shotId));
+  if (seg) {
+    const total = seg.shots.length, done = seg.shots.filter(sh=>sh.done).length;
+    const fillEl = document.getElementById('st-prog-fill-'+seg.id);
+    const countEl = document.getElementById('st-prog-count-'+seg.id);
+    if (fillEl) fillEl.style.width = (total ? Math.round(done/total*100) : 0) + '%';
+    if (countEl) countEl.textContent = done + ' / ' + total;
+  }
   updateProgress(); autoSave();
 }
 
