@@ -1942,7 +1942,7 @@
     padding: 4px 8px; cursor: pointer; outline: none;
   }
   .st-rukn-sel option { background: var(--card); color: var(--text-1); }
-  .st-title-input { font-weight: 600; min-width: 120px; }
+  .st-title-input { font-weight: 600; min-width: 120px; min-height: 38px; overflow: hidden; }
   .st-content-input { min-width: 180px; min-height: 38px; }
   .st-face-input { min-width: 90px; }
   .st-file-input { min-width: 90px; font-family: monospace; font-size: 12px; }
@@ -6058,8 +6058,8 @@ function buildTableViewHTML() {
       globalIdx++;
       rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''}">
         <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
-        <td><input class="st-cell-input st-title-input" value="${esc(s.title||'')}" placeholder="عنوان المشهد"
-          oninput="stSet('${s.id}','title',this.value)" onchange="autoSave()"></td>
+        <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
+          oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
         <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
           oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
         <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
