@@ -3921,6 +3921,16 @@ function _isTamraFolder() {
   const folder = loadFolders().find(f => f.id === cur.folderId);
   return folder?.name?.trim() === 'تمرة';
 }
+function _getFolderName() {
+  if (!cur || !cur.folderId) return '';
+  return loadFolders().find(f => f.id === cur.folderId)?.name?.trim() || '';
+}
+function _getRuknList() {
+  const name = _getFolderName();
+  if (name === 'تمرة') return ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب'];
+  if (name === 'قناة حاتم') return ['تأملات','أدلة','معيشة','كتب','غيرها'];
+  return [];
+}
 
 function buildSegmentHTML(seg) {
   const total=seg.shots.length, done=seg.shots.filter(s=>s.done).length;
@@ -3943,11 +3953,10 @@ function buildSegmentHTML(seg) {
                  oninput="setSegFace('${seg.id}',this.value)">
         </div>
         <div class="seg-head-row2">
-          ${_isTamraFolder() ? `<select class="seg-rukn-input" id="segrokn-${seg.id}"
+          ${_getRuknList().length ? `<select class="seg-rukn-input" id="segrokn-${seg.id}"
                  onchange="setSegRukn('${seg.id}',this.value);autoSave()">
             <option value="">الركن</option>
-            ${['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب']
-              .map(r=>`<option value="${r}" ${(seg.rukn||'')==r?'selected':''}>${r}</option>`).join('')}
+            ${_getRuknList().map(r=>`<option value="${r}" ${(seg.rukn||'')==r?'selected':''}>${r}</option>`).join('')}
           </select>` : '<span style="flex:1"></span>'}
           <div class="seg-progress-wrap" id="seg-prog-${seg.id}">
             <svg class="seg-progress-ring" viewBox="0 0 32 32">
@@ -4070,16 +4079,16 @@ function _updateFaceOptions() {
   if (!faces.includes(cur_val)) sel.value = '';
 
   // ── Rukn options (only for تمرة folder) ──
-  const isTamra = _isTamraFolder();
+  const hasRukn = _getRuknList().length > 0;
   const ruknSel = document.getElementById('sfRuknSel');
   const ruknDiv = document.getElementById('sfRuknDiv');
   const ruknLbl = document.getElementById('sfRuknLbl');
   if (ruknSel) {
-    const show = isTamra ? '' : 'none';
+    const show = hasRukn ? '' : 'none';
     ruknSel.style.display = show;
     if (ruknDiv) ruknDiv.style.display = show;
     if (ruknLbl) ruknLbl.style.display = show;
-    if (isTamra) {
+    if (hasRukn) {
       const rukns = [...new Set(
         (cur?.segments||[]).map(sg => (sg.rukn||'').trim()).filter(Boolean)
       )].sort();
@@ -6061,7 +6070,7 @@ let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
 
 function buildTableViewHTML() {
   const segs = cur.segments || [];
-  const ruknList = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب'];
+  const ruknList = _getRuknList();
   const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
   let rows = '';
   let globalIdx = 0;
