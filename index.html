@@ -6080,9 +6080,20 @@ function buildTableViewHTML() {
   const segs = cur.segments || [];
   const ruknList = _getRuknList();
   const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
+  const { done: fDone, face: fFace, rukn: fRukn } = _shotFilter;
+  const hasFilter = fDone !== 'all' || fFace || fRukn;
+
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
+    // filter shots for this segment
+    let visibleShots = seg.shots;
+    if (fDone === 'done')    visibleShots = visibleShots.filter(s => s.done);
+    if (fDone === 'pending') visibleShots = visibleShots.filter(s => !s.done);
+    if (fFace)               visibleShots = visibleShots.filter(s => (s.face||'').trim() === fFace);
+    if (fRukn && (seg.rukn||'').trim() !== fRukn) visibleShots = [];
+    if (hasFilter && !visibleShots.length) return; // skip segments with no matching shots
+
     const isCol = !!seg.collapsed;
     const totalShots = seg.shots.length;
     const doneShots = seg.shots.filter(s=>s.done).length;
@@ -6125,7 +6136,7 @@ function buildTableViewHTML() {
       <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
       <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
 
-    const sortedShots = [...seg.shots];
+    const sortedShots = [...visibleShots];
     if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
     else if (_tableSort === 'rukn') sortedShots.sort((a,b)=>(a.rukn||'').localeCompare(b.rukn||'','ar'));
     else if (_tableSort === 'done') sortedShots.sort((a,b)=>Number(a.done||false)-Number(b.done||false));
@@ -6156,6 +6167,8 @@ function buildTableViewHTML() {
       </tr>`;
     });
   });
+
+  if (hasFilter && !rows) rows = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
 
   return `<div class="shots-table-wrap"><table class="shots-table">
     <tbody>${rows}</tbody>
