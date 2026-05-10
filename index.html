@@ -1942,6 +1942,12 @@
     padding: 4px 8px; cursor: pointer; outline: none;
   }
   .st-rukn-sel option { background: var(--card); color: var(--text-1); }
+  .st-shot-rukn-sel {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text-2); font-size: 11px; padding: 6px 8px; cursor: pointer;
+    appearance: auto;
+  }
+  .st-shot-rukn-sel option { background: var(--card); color: var(--text-1); }
   .st-title-input { font-weight: 600; min-width: 120px; min-height: 38px; overflow: hidden; }
   .st-content-input { min-width: 180px; min-height: 38px; }
   .st-face-input { min-width: 90px; }
@@ -2300,12 +2306,6 @@
           <option value="60">60</option>
         </select>
         <button class="btn btn-glass btn-sm" id="collapseAllBtn" onclick="toggleAllSegments()" title="فتح/إغلاق جميع المقاطع">▼▲</button>
-        <select class="fps-select" id="tableSortSel" onchange="setTableSort(this.value)" style="display:none" title="ترتيب الصفوف">
-          <option value="order">↕ الترتيب</option>
-          <option value="face">↕ الوجه</option>
-          <option value="rukn">↕ الركن</option>
-          <option value="done">↕ الحالة</option>
-        </select>
         <button class="btn btn-glass btn-sm" onclick="openTextImport()">📝 نص → مشاهد</button>
         <button class="btn btn-glass btn-sm" onclick="addSegment()">+ مقطع</button>
         <button class="btn btn-filled btn-sm" onclick="addShotToLast()">+ مشهد</button>
@@ -3756,8 +3756,6 @@ function _syncViewDropdown() {
   cb('vsTCNotes', _viewSettings.showTCNotes);
   cb('vsInfo',    _viewSettings.showProjectInfo);
   cb('vsTable',   _tableView);
-  const sortSel = document.getElementById('tableSortSel');
-  if (sortSel) { sortSel.style.display = _tableView ? '' : 'none'; sortSel.value = _tableSort; }
   // Apply project info card visibility
   const card = document.getElementById('infoCard');
   if (card) card.style.display = _viewSettings.showProjectInfo ? '' : 'none';
@@ -6044,124 +6042,49 @@ let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
 
 function buildTableViewHTML() {
   const segs = cur.segments || [];
-
-  const shotRow = (s, seg, idx, groupLabel) => {
-    const segName = groupLabel !== undefined ? groupLabel : null;
-    return `<tr class="${s.done?'done-row':''}" id="str-${s.id}">
-      <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${idx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
-      <td>
-        ${segName!==null?`<div style="font-size:10px;color:var(--subtext);margin-bottom:2px">🎬 ${esc(segName)}</div>`:''}
-        <textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
-          oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea>
-      </td>
-      <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
-        oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
-      <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
-        oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"></td>
-      <td style="padding:0">
-        <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
-          oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
-          style="border-bottom:1px solid var(--border)">
-        <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
-          oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
-      </td>
-      <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
-        onchange="stToggleDone('${s.id}',this.checked)"></td>
-    </tr>`;
-  };
-
-  const headerRow = `<tr class="st-header-row">
-    <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:42%">المحتوى</th>
-    <th style="width:10%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
+  const ruknList = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب'];
+  const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
 
   let rows = '';
-
-  if (_tableSort === 'order') {
-    // Original segment-grouped layout
-    let globalIdx = 0;
-    segs.forEach(seg => {
-      const ruknOpts = ['الشرح البودكاستي','اشرح لي في دقيقة','الإعلانات','الشرح المباشر','اسأل واستثمر','مزايا التطبيق','في المكتب']
-        .map(r=>`<option value="${r}" ${(seg.rukn||''===r)?'selected':''}>${r}</option>`).join('');
-      const isCol = !!seg.collapsed;
-      rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
-        <td colspan="4">
-          <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
-          🎬 ${esc(seg.title||'مقطع')}
-        </td>
-        <td colspan="2" style="padding:6px 10px" onclick="event.stopPropagation()">
-          <select class="st-rukn-sel" onchange="setSegRukn('${seg.id}',this.value);autoSave()">
-            <option value="" ${!seg.rukn?'selected':''}>— الركن —</option>${ruknOpts}
+  let globalIdx = 0;
+  segs.forEach(seg => {
+    const isCol = !!seg.collapsed;
+    rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
+      <td colspan="6">
+        <span id="st-arr-${seg.id}" style="margin-left:6px;display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
+        🎬 ${esc(seg.title||'مقطع')}
+      </td></tr>`;
+    rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
+      <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
+      <th style="width:12%">الوجه / الركن</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
+    seg.shots.forEach(s => {
+      globalIdx++;
+      rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isCol?'none':''}">
+        <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
+        <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
+          oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
+        <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
+          oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
+        <td style="padding:0">
+          <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
+            oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"
+            style="border-bottom:1px solid var(--border)">
+          <select class="st-cell-input st-shot-rukn-sel" onchange="stSet('${s.id}','rukn',this.value);autoSave()">
+            <option value="" ${!s.rukn?'selected':''}>— الركن —</option>${ruknOpts(s.rukn||'')}
           </select>
-        </td></tr>`;
-      rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
-        <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:42%">المحتوى</th>
-        <th style="width:10%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
-      seg.shots.forEach(s => {
-        globalIdx++;
-        const isColSub = isCol;
-        rows += `<tr class="st-seg-sub-${seg.id} ${s.done?'done-row':''}" id="str-${s.id}" style="display:${isColSub?'none':''}">
-          <td class="st-num" onclick="openShotFull('${s.id}')" title="فتح المشهد" style="cursor:pointer;user-select:none">${globalIdx}<div style="font-size:9px;color:var(--text-3);line-height:1">⛶</div></td>
-          <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
-            oninput="stSet('${s.id}','title',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
-          <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
-            oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
-          <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
-            oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"></td>
-          <td style="padding:0">
-            <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
-              oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
-              style="border-bottom:1px solid var(--border)">
-            <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
-              oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
-          </td>
-          <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
-            onchange="stToggleDone('${s.id}',this.checked)"></td>
-        </tr>`;
-      });
+        </td>
+        <td style="padding:0">
+          <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
+            oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
+            style="border-bottom:1px solid var(--border)">
+          <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
+            oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
+        </td>
+        <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
+          onchange="stToggleDone('${s.id}',this.checked)"></td>
+      </tr>`;
     });
-  } else {
-    // Flat sorted layout — flatten all shots with segment reference
-    const flat = [];
-    segs.forEach(seg => seg.shots.forEach(s => flat.push({ s, seg })));
-
-    if (_tableSort === 'face') {
-      flat.sort((a, b) => (a.s.face||'').localeCompare(b.s.face||'', 'ar'));
-    } else if (_tableSort === 'rukn') {
-      flat.sort((a, b) => (a.seg.rukn||'').localeCompare(b.seg.rukn||'', 'ar'));
-    } else if (_tableSort === 'done') {
-      flat.sort((a, b) => Number(a.s.done||false) - Number(b.s.done||false));
-    }
-
-    // Group into sections by the sort key
-    const groupKey = item => {
-      if (_tableSort === 'face') return item.s.face || '—';
-      if (_tableSort === 'rukn') return item.seg.rukn || '—';
-      if (_tableSort === 'done') return item.s.done ? 'مُنجز ✓' : 'قيد التصوير';
-      return '';
-    };
-
-    let lastGroup = undefined;
-    let idx = 0;
-    flat.forEach(({ s, seg }) => {
-      const gk = groupKey({ s, seg });
-      if (gk !== lastGroup) {
-        lastGroup = gk;
-        rows += `<tr class="st-seg-row" style="cursor:default">
-          <td colspan="6" style="font-size:12px;font-weight:600;padding:8px 12px">${esc(gk)}</td>
-        </tr>`;
-        rows += headerRow;
-      }
-      idx++;
-      rows += shotRow(s, seg, idx, seg.title||'مقطع');
-    });
-    if (!flat.length) rows += `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--subtext)">لا توجد مشاهد</td></tr>`;
-  }
-
-  // Sync sort select value
-  setTimeout(() => {
-    const sel = document.getElementById('tableSortSel');
-    if (sel) sel.value = _tableSort;
-  }, 0);
+  });
 
   return `<div class="shots-table-wrap"><table class="shots-table">
     <tbody>${rows}</tbody>
