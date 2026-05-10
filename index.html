@@ -6027,10 +6027,10 @@ function buildTableViewHTML() {
           oninput="stSet('${s.id}','content',this.value);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
         <td><input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
           oninput="stSet('${s.id}','face',this.value)" onchange="autoSave()"></td>
-        <td><input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="ملف A"
-          oninput="stSet('${s.id}','filename',this.value)" onchange="autoSave()"></td>
-        <td><input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="ملف B"
-          oninput="stSet('${s.id}','filename2',this.value)" onchange="autoSave()"></td>
+        <td><input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
+          oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"></td>
+        <td><input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
+          oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric"></td>
         <td class="st-done-cell"><input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
           onchange="stToggleDone('${s.id}',this.checked)"></td>
       </tr>`;
