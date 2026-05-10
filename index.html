@@ -6104,6 +6104,13 @@ function buildTableViewHTML() {
 
   return `<div class="shots-table-wrap"><table class="shots-table">
     <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" style="padding:10px 12px;border-top:1px solid var(--border)">
+          <button onclick="addShotToLast();renderShots()" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--subtext);font-size:12px;padding:6px 18px;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">+ إضافة مشهد</button>
+        </td>
+      </tr>
+    </tfoot>
   </table></div>`;
 }
 
