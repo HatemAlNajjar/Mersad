@@ -923,6 +923,46 @@
       display: flex; gap: 10px; justify-content: flex-end;
     }
 
+    /* ── Text Import Modal ── */
+    .ti-overlay {
+      position: fixed; inset: 0; z-index: 700;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.18s ease;
+    }
+    .ti-modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; width: min(620px, 94vw);
+      max-height: 90vh; overflow-y: auto;
+      padding: 28px 28px 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .ti-modal h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .ti-modal textarea {
+      width: 100%; box-sizing: border-box; min-height: 260px;
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-1); font-size: 13px;
+      font-family: monospace; line-height: 1.6;
+      padding: 12px 14px; resize: vertical; direction: rtl;
+    }
+    .ti-modal textarea:focus { outline: none; border-color: var(--accent); }
+    .ti-hint {
+      font-size: 12px; color: var(--subtext);
+      background: var(--bg); border-radius: 8px;
+      padding: 10px 13px; border: 1px solid var(--border); line-height: 1.8;
+    }
+    .ti-preview {
+      font-size: 12px; color: var(--subtext);
+      background: var(--bg); border-radius: 8px;
+      padding: 10px 13px; border: 1px solid var(--border);
+      line-height: 1.8; max-height: 180px; overflow-y: auto;
+    }
+    .ti-preview strong { color: var(--text-1); }
+    .ti-preview .ti-seg { color: var(--accent); font-weight: 600; margin-top: 4px; }
+    .ti-preview .ti-shot { padding-right: 14px; color: var(--text-2); }
+    .ti-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
     /* ── Shot Fullscreen ── */
     .sf-overlay {
       position: fixed; inset: 0; z-index: 650;
@@ -2207,6 +2247,7 @@
           <option value="60">60</option>
         </select>
         <button class="btn btn-glass btn-sm" id="collapseAllBtn" onclick="toggleAllSegments()" title="فتح/إغلاق جميع المقاطع">▼▲</button>
+        <button class="btn btn-glass btn-sm" onclick="openTextImport()">📝 نص → مشاهد</button>
         <button class="btn btn-glass btn-sm" onclick="addSegment()">+ مقطع</button>
         <button class="btn btn-filled btn-sm" onclick="addShotToLast()">+ مشهد</button>
         <button class="btn btn-glass btn-sm" id="projTrashBtn" onclick="toggleProjTrash()" title="المحذوفات" style="display:none">🗑</button>
@@ -2334,6 +2375,23 @@
 <div class="viewonly-banner" id="viewonlyBanner" style="display:none">
   <span class="viewonly-text">👁 أنت تعرض هذا المشروع بوضع القراءة فقط</span>
   <button class="btn btn-filled btn-sm" onclick="claimSharedProject()" id="claimBtn">إضافة إلى مشاريعي</button>
+</div>
+
+<!-- Text Import Modal -->
+<div class="ti-overlay" id="tiOverlay" style="display:none" onclick="if(event.target===this)closeTextImport()">
+  <div class="ti-modal">
+    <h2 id="tiTitle">📝 تحويل نص إلى مشاهد</h2>
+    <div class="ti-hint">
+      استخدم <strong>#</strong> لاسم المقطع و <strong>##</strong> لاسم المشهد والنص تحته يصبح محتوى المشهد.<br>
+      مثال: <code># مقطع الافتتاحية</code> ثم <code>## مشهد الوصول</code>
+    </div>
+    <textarea id="tiText" placeholder="# اسم المقطع الأول&#10;## اسم المشهد الأول&#10;وصف المشهد...&#10;&#10;## اسم المشهد الثاني&#10;&#10;# اسم المقطع الثاني&#10;## مشهد آخر" oninput="previewTextImport()"></textarea>
+    <div class="ti-preview" id="tiPreview" style="display:none"></div>
+    <div class="ti-btns">
+      <button class="btn btn-glass btn-sm" onclick="closeTextImport()">إلغاء</button>
+      <button class="btn btn-filled btn-sm" id="tiImportBtn" onclick="doTextImport()" disabled>تحويل</button>
+    </div>
+  </div>
 </div>
 
 <!-- Move to folder modal -->
@@ -2902,6 +2960,7 @@ async function renderHome() {
         <div class="folder-grid" id="fg-${f.id}" style="${isOpen?'':'display:none'}">
           ${fps.map(p => projCardHTML(p)).join('')}
           <div class="new-card" onclick="createProjectInFolder('${f.id}')"><div class="new-icon">+</div><div class="new-label">تصوير جديد</div></div>
+          <div class="new-card" onclick="openTextImport(true,'${f.id}')"><div class="new-icon">📝</div><div class="new-label">من نص</div></div>
         </div>
       </div>`;
   });
@@ -2914,6 +2973,7 @@ async function renderHome() {
     html += `<div class="folder-grid">
       ${ungrouped.map(p => projCardHTML(p)).join('')}
       <div class="new-card" onclick="createProject()"><div class="new-icon">+</div><div class="new-label">تصوير جديد</div></div>
+      <div class="new-card" onclick="openTextImport(true)"><div class="new-icon">📝</div><div class="new-label">من نص</div></div>
     </div>`;
   }
 
@@ -5881,6 +5941,93 @@ function tpOpenDisplay() {
   if (s) setTimeout(() => tpSend({ cmd: 'load', text: s.contentRich || s.content || '', fontSize: tpFontSize, speed: tpSpeed }), 800);
 }
 
+// ── Text Import ──
+let _tiCreateMode = false;
+let _tiCreateFolder = null;
+
+function parseTextToImport(text) {
+  const lines = text.split('\n');
+  const segments = [];
+  let curSeg = null, curShot = null;
+  for (const line of lines) {
+    const h1 = line.match(/^#\s+(.+)/);
+    const h2 = line.match(/^#{2,4}\s+(.+)/);
+    if (h1) {
+      curSeg = { title: h1[1].trim(), shots: [] };
+      segments.push(curSeg); curShot = null;
+    } else if (h2) {
+      if (!curSeg) { curSeg = { title: 'مقطع 1', shots: [] }; segments.push(curSeg); }
+      curShot = { title: h2[1].trim(), content: '' };
+      curSeg.shots.push(curShot);
+    } else if (curShot) {
+      curShot.content += (curShot.content ? '\n' : '') + line;
+    }
+  }
+  segments.forEach(seg => seg.shots.forEach(sh => { sh.content = sh.content.trim(); }));
+  return segments.filter(seg => seg.title || seg.shots.length);
+}
+
+function openTextImport(createMode = false, folderId = null) {
+  _tiCreateMode = !!createMode;
+  _tiCreateFolder = folderId || null;
+  document.getElementById('tiText').value = '';
+  document.getElementById('tiPreview').style.display = 'none';
+  document.getElementById('tiImportBtn').disabled = true;
+  document.getElementById('tiTitle').textContent = _tiCreateMode ? '📝 تصوير جديد من نص' : '📝 تحويل نص إلى مشاهد';
+  document.getElementById('tiOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('tiText').focus(), 80);
+}
+
+function closeTextImport() {
+  document.getElementById('tiOverlay').style.display = 'none';
+}
+
+function previewTextImport() {
+  const segs = parseTextToImport(document.getElementById('tiText').value);
+  const preview = document.getElementById('tiPreview');
+  const btn = document.getElementById('tiImportBtn');
+  if (!segs.length) { preview.style.display = 'none'; btn.disabled = true; return; }
+  btn.disabled = false;
+  const totalShots = segs.reduce((n, s) => n + s.shots.length, 0);
+  let html = `<strong>سيتم إنشاء ${segs.length} مقطع و ${totalShots} مشهد:</strong><br>`;
+  segs.forEach(seg => {
+    html += `<div class="ti-seg">📁 ${escHtml(seg.title)} (${seg.shots.length} مشهد)</div>`;
+    seg.shots.forEach((sh, i) => { html += `<div class="ti-shot">${i + 1}. ${escHtml(sh.title)}</div>`; });
+  });
+  preview.innerHTML = html;
+  preview.style.display = 'block';
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function doTextImport() {
+  const segs = parseTextToImport(document.getElementById('tiText').value);
+  if (!segs.length) return;
+  const buildSeg = (seg, idx) => ({
+    id: uid(), title: seg.title || `مقطع ${idx + 1}`, collapsed: false,
+    shots: seg.shots.map(sh => ({
+      id: uid(), title: sh.title, done: false, content: sh.content,
+      contentRich: '', shooting: '', editMusic: '',
+      filename: '', filename2: '', timecodeNotes: [], tcOpen: false, collapsed: false
+    }))
+  });
+  if (_tiCreateMode) {
+    const p = { id: uid(), name: '', date: today(), location: '', notes: '', fps: 25,
+      segments: segs.map(buildSeg), folderId: _tiCreateFolder, lastModified: Date.now() };
+    await saveProject(p);
+    closeTextImport();
+    openProject(p.id);
+  } else {
+    if (!cur) return;
+    if (!cur.segments) cur.segments = [];
+    segs.forEach((seg, i) => cur.segments.push(buildSeg(seg, cur.segments.length + i)));
+    renderShots(); updateProgress(); autoSave();
+    closeTextImport();
+  }
+}
+
 // ── Expose to window (needed for type="module") ──
 Object.assign(window, {
   createFolder, renameFolder, deleteFolder, toggleFolderOpen,
@@ -5913,6 +6060,7 @@ Object.assign(window, {
   setViewMode,
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpStartScroll, tpStopScroll,
+  openTextImport, closeTextImport, previewTextImport, doTextImport,
 });
 
 // ── View toggle buttons (wired directly — no window lookup needed) ──
