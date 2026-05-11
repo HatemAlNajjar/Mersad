@@ -3571,7 +3571,7 @@ function addShotToSeg(segId) {
   const s={id:uid(),title:'مشهد '+(_globalShotCount()+1),done:false,content:'',contentRich:'',shooting:'',editMusic:'',filename:'',filename2:'',timecodeNotes:[],tcOpen:false,collapsed:false};
   seg.shots.push(s);
   if (_tableView) {
-    const list = document.getElementById('shotList');
+    const list = document.getElementById('shotsList');
     if (list) list.innerHTML = buildTableViewHTML();
   } else {
     const body=document.getElementById('segbody-'+segId);
@@ -6288,7 +6288,7 @@ function stDelShot(shotId) {
     if (!cur._trash.shots) cur._trash.shots = [];
     cur._trash.shots.unshift({ ...deletedShot, _deletedAt: Date.now(), _parentSeg: parentSegTitle });
   }
-  const list = document.getElementById('shotList');
+  const list = document.getElementById('shotsList');
   if (list) list.innerHTML = buildTableViewHTML();
   updateProgress(); autoSave();
 }
@@ -6321,7 +6321,7 @@ function toggleTableView(val) {
 function setTableSort(val) {
   _tableSort = val;
   localStorage.setItem('sm_tableSort', val);
-  const list = document.getElementById('shotList');
+  const list = document.getElementById('shotsList');
   if (list) list.innerHTML = buildTableViewHTML();
 }
 
