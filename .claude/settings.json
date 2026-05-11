@@ -1,0 +1,11 @@
+{
+  "includeGitInstructions": false,
+  "permissions": {
+    "allow": [
+      "Bash(git push -u origin main)",
+      "Bash(git push origin main)",
+      "Bash(git checkout main)",
+      "Bash(git merge *)"
+    ]
+  }
+}
