@@ -571,6 +571,28 @@
     }
     .sf-select:focus, .sf-select.sf-active { border-color: var(--accent); outline: none; }
     .sf-label { font-size: 11px; color: var(--subtext); font-weight: 500; white-space: nowrap; }
+    .sf-col-btn {
+      position: relative; display: flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      border: 1.5px solid var(--border); background: transparent; color: var(--text-2);
+      cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap;
+    }
+    .sf-col-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sf-col-btn.sf-active { border-color: var(--accent); color: var(--accent); }
+    .sf-col-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 999;
+      background: var(--surface-1); border: 1px solid var(--border);
+      border-radius: 10px; padding: 6px 4px; min-width: 130px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: none; flex-direction: column; gap: 2px;
+    }
+    .sf-col-dropdown.open { display: flex; }
+    .sf-col-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      border-radius: 7px; cursor: pointer; font-size: 12px; color: var(--text-1);
+      transition: background 0.12s; user-select: none;
+    }
+    .sf-col-item:hover { background: var(--hover); }
+    .sf-col-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
     .shot-seg-label {
       font-size: 10px; font-weight: 600; color: var(--subtext);
       padding: 2px 8px; letter-spacing: 0.3px; margin-bottom: 2px;
@@ -2342,6 +2364,18 @@
         <option value="">الكل</option>
       </select>
       <div class="sf-divider"></div>
+      <div style="position:relative">
+        <button class="sf-col-btn" id="sfColBtn" onclick="toggleColDropdown(event)" title="إظهار/إخفاء الأعمدة">
+          <span>الأعمدة</span><span style="font-size:10px">▾</span>
+        </button>
+        <div class="sf-col-dropdown" id="sfColDropdown">
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-title"   onchange="setColVis('title',this.checked)"  > المشهد</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-content" onchange="setColVis('content',this.checked)"> المحتوى</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-face"    onchange="setColVis('face',this.checked)"   > الوجه</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-files"   onchange="setColVis('files',this.checked)"  > الملفات</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-done"    onchange="setColVis('done',this.checked)"   > الإتمام</label>
+        </div>
+      </div>
     </div>
 
     <div id="shotsList"></div>
@@ -6160,6 +6194,38 @@ function tpOpenDisplay() {
 // ── Table View ──
 let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
+const _colVisDefault = { title: true, content: true, face: true, files: true, done: true };
+let _tableColVis = Object.assign({}, _colVisDefault, JSON.parse(localStorage.getItem('sm_tableColVis') || '{}'));
+
+function toggleColDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('sfColDropdown');
+  if (!dd) return;
+  // sync checkboxes with current state
+  Object.keys(_tableColVis).forEach(k => {
+    const cb = document.getElementById('sfCol-' + k);
+    if (cb) cb.checked = _tableColVis[k];
+  });
+  dd.classList.toggle('open');
+  const btn = document.getElementById('sfColBtn');
+  if (btn) btn.classList.toggle('sf-active', dd.classList.contains('open'));
+}
+
+function setColVis(col, visible) {
+  _tableColVis[col] = visible;
+  localStorage.setItem('sm_tableColVis', JSON.stringify(_tableColVis));
+  const list = document.getElementById('shotList');
+  if (list) list.innerHTML = buildTableViewHTML();
+}
+
+document.addEventListener('click', () => {
+  const dd = document.getElementById('sfColDropdown');
+  if (dd && dd.classList.contains('open')) {
+    dd.classList.remove('open');
+    const btn = document.getElementById('sfColBtn');
+    if (btn) btn.classList.remove('sf-active');
+  }
+});
 
 
 
@@ -6187,11 +6253,14 @@ function buildTableViewHTML() {
     const pendingShots = totalShots - doneShots;
     const segRuknOpts = ruknList.map(r=>`<option value="${r}" ${(seg.rukn||'')===r?'selected':''}>${r}</option>`).join('');
     const {val: segFaceVal, ph: segFacePh} = _segFaceLabel(seg);
+    const cv = _tableColVis;
+    const colspanInfo = Math.max(1, (cv.title?1:0)+(cv.content?1:0)+(cv.face?1:0));
+    const colspanProg = Math.max(1, (cv.files?1:0)+(cv.done?1:0));
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
       <td style="white-space:nowrap;width:36px">
         <span id="st-arr-${seg.id}" style="display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
       </td>
-      <td colspan="3" style="white-space:nowrap" onclick="event.stopPropagation()">
+      <td colspan="${colspanInfo}" style="white-space:nowrap" onclick="event.stopPropagation()">
         <span style="margin-left:4px">🎬</span>
         <input value="${esc(seg.title||'')}" placeholder="اسم المقطع"
           oninput="setSegTitle('${seg.id}',this.value)" onchange="autoSave()"
@@ -6206,7 +6275,7 @@ function buildTableViewHTML() {
           oninput="setSegFaceAll('${seg.id}',this.value)" onchange="autoSave()"
           style="font-size:11px;padding:2px 6px;width:auto;min-width:60px;max-width:120px;display:inline-block">
       </td>
-      <td colspan="2" style="padding:4px 12px" onclick="event.stopPropagation()">
+      <td colspan="${colspanProg}" style="padding:4px 12px" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;direction:rtl">
           <span id="st-prog-count-${seg.id}" style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div style="flex:1;min-width:60px;height:5px;background:rgba(52,199,89,0.18);border-radius:3px;overflow:hidden;transform:scaleX(-1)">
@@ -6214,9 +6283,15 @@ function buildTableViewHTML() {
           </div>
         </div>
       </td></tr>`;
+    const cv = _tableColVis;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
-      <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
-      <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
+      <th style="width:36px">#</th>
+      ${cv.title   ? `<th style="width:14%">المشهد</th>`   : ''}
+      ${cv.content ? `<th style="width:40%">المحتوى</th>` : ''}
+      ${cv.face    ? `<th style="width:12%">الوجه</th>`    : ''}
+      ${cv.files   ? `<th style="width:16%">الملفات</th>` : ''}
+      ${cv.done    ? `<th style="width:44px">✓</th>`       : ''}
+    </tr>`;
 
     const sortedShots = [...visibleShots];
     if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
@@ -6228,41 +6303,42 @@ function buildTableViewHTML() {
         <td class="st-num" title="فتح المشهد" style="cursor:default;user-select:none;position:relative"><div onclick="openShotFull('${s.id}')" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--text-3);cursor:pointer;line-height:1" title="فتح المشهد">⛶</div><div style="padding-top:18px;font-size:11px;cursor:pointer" onclick="openShotFull('${s.id}')">${globalIdx}</div>
           <div class="st-row-drag" onclick="event.stopPropagation()" onmousedown="stRowResizeStart(event,'${s.id}')" ontouchstart="stRowResizeStart(event,'${s.id}')"></div>
         </td>
-        <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
+        ${cv.title ? `<td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
           style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
-          oninput="stSet('${s.id}','title',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
-        <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
+          oninput="stSet('${s.id}','title',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.title||'')}</textarea></td>` : ''}
+        ${cv.content ? `<td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
           style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
-          oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
-        <td>
+          oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>` : ''}
+        ${cv.face ? `<td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
             oninput="stSet('${s.id}','face',this.value);_refreshSegFaceEl('${seg.id}')" onchange="autoSave()">
-        </td>
-        <td style="padding:0">
+        </td>` : ''}
+        ${cv.files ? `<td style="padding:0">
           <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
             oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
             style="border-bottom:1px solid var(--border)">
           <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
             oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
-        </td>
-        <td class="st-done-cell">
+        </td>` : ''}
+        ${cv.done ? `<td class="st-done-cell">
           <button onclick="stDelShot('${s.id}')" title="حذف المشهد"
             style="position:absolute;top:4px;left:4px;background:none;border:none;cursor:pointer;color:var(--text-3);font-size:10px;padding:0;line-height:1"
             onmouseover="this.style.color='#e55'" onmouseout="this.style.color='var(--text-3)'">✕</button>
           <input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
             onchange="stToggleDone('${s.id}',this.checked)">
-        </td>
+        </td>` : ''}
       </tr>`;
     });
   });
 
-  if (hasFilter && !rows) rows = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
+  const totalCols = 1 + (_tableColVis.title?1:0) + (_tableColVis.content?1:0) + (_tableColVis.face?1:0) + (_tableColVis.files?1:0) + (_tableColVis.done?1:0);
+  if (hasFilter && !rows) rows = `<tr><td colspan="${totalCols}" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
 
   return `<div class="shots-table-wrap"><table class="shots-table">
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td colspan="6" style="padding:10px 12px;border-top:1px solid var(--border)">
+        <td colspan="${totalCols}" style="padding:10px 12px;border-top:1px solid var(--border)">
           <button onclick="addShotToLast()" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--subtext);font-size:12px;padding:6px 18px;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">+ إضافة مشهد</button>
         </td>
       </tr>
