@@ -6847,12 +6847,12 @@ function updateUserPill(user) {
     updateUserPill(user);
 
     if (!user) {
-      // Not logged in → hide login overlay, show home in guest mode
-      document.getElementById('loginPage').style.display = 'none';
+      // Not logged in → show login page
+      const lp = document.getElementById('loginPage');
+      lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
       document.getElementById('projectPage').classList.remove('active');
       if (_userSharesUnsub) { _userSharesUnsub(); _userSharesUnsub = null; }
       _sharedFolders = [];
-      showHome();
       return;
     }
 
