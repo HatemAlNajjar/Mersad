@@ -2390,6 +2390,11 @@ document.addEventListener('DOMContentLoaded', function() {
         <option value="">الكل</option>
       </select>
       <div class="sf-divider"></div>
+      <span class="sf-label">المقطع</span>
+      <select class="sf-select" id="sfSegSel" onchange="setShotFilter('seg',this.value)">
+        <option value="">الكل</option>
+      </select>
+      <div class="sf-divider"></div>
       <div style="position:relative">
         <button class="sf-col-btn" id="sfColBtn" onclick="toggleColDropdown(event)" title="إظهار/إخفاء الأعمدة">
           <span>الأعمدة</span><span style="font-size:10px">▾</span>
@@ -3212,7 +3217,7 @@ async function openProject(id) {
   const p = getP(id);
   if (!p) return;
   cur=JSON.parse(JSON.stringify(p)); timers={};
-  _shotFilter = { done: 'all', face: '', rukn: '', chrono: false };
+  _shotFilter = { done: 'all', face: '', rukn: '', seg: '', chrono: false };
   // ── Migrate old flat shots → one segment ──
   if(!cur.segments && cur.shots) {
     cur.segments=[{id:uid(),title:'المشاهد',collapsed:false,shots:cur.shots}];
@@ -4152,7 +4157,7 @@ function _initShotDragDrop() {
 }
 
 // ── Shot Filters ───────────────────────────────────────────────
-let _shotFilter = { done: 'all', face: '', rukn: '', chrono: false };
+let _shotFilter = { done: 'all', face: '', rukn: '', seg: '', chrono: false };
 
 function setShotFilter(key, val) {
   _shotFilter[key] = val;
@@ -4170,6 +4175,17 @@ function _updateFaceOptions() {
   sel.innerHTML = '<option value="">الكل</option>' +
     faces.map(f => `<option value="${esc(f)}" ${cur_val===f?'selected':''}>${esc(f)}</option>`).join('');
   if (!faces.includes(cur_val)) sel.value = '';
+
+  // ── Segment options ──
+  const segSel = document.getElementById('sfSegSel');
+  if (segSel) {
+    const cur_seg = segSel.value;
+    segSel.innerHTML = '<option value="">الكل</option>' +
+      (cur?.segments||[]).filter(sg => sg.title).map(sg =>
+        `<option value="${esc(sg.id)}" ${cur_seg===sg.id?'selected':''}>${esc(sg.title)}</option>`
+      ).join('');
+    if (!(cur?.segments||[]).find(sg => sg.id === cur_seg)) segSel.value = '';
+  }
 
   // ── Rukn options (only for تمرة folder) ──
   const hasRukn = _getRuknList().length > 0;
@@ -4194,7 +4210,7 @@ function _updateFaceOptions() {
 }
 
 function _updateFilterUI() {
-  const { done, face, rukn, chrono } = _shotFilter;
+  const { done, face, rukn, seg, chrono } = _shotFilter;
   const bar = document.getElementById('shotsFilterBar'); if (!bar) return;
   bar.style.display = cur ? 'flex' : 'none';
   // done chips
@@ -4208,13 +4224,16 @@ function _updateFilterUI() {
   // rukn select highlight
   const ruknSel = document.getElementById('sfRuknSel');
   if (ruknSel) ruknSel.classList.toggle('sf-active', !!rukn);
+  // seg select highlight
+  const segSel = document.getElementById('sfSegSel');
+  if (segSel) segSel.classList.toggle('sf-active', !!seg);
   // chrono chip
   const ch = document.getElementById('sfChronoCh');
   if (ch) ch.classList.toggle('sf-active', chrono);
 }
 
 function _filteredSegHTML() {
-  const { done, face, rukn, chrono } = _shotFilter;
+  const { done, face, rukn, seg: segFilter, chrono } = _shotFilter;
   // collect all shots with their metadata
   let pool = [];
   let gIdx = 1;
@@ -4228,6 +4247,7 @@ function _filteredSegHTML() {
   if (done === 'pending') pool = pool.filter(({s}) => !s.done);
   if (face)               pool = pool.filter(({s}) => (s.face||'').trim() === face);
   if (rukn)               pool = pool.filter(({seg}) => (seg.rukn||'').trim() === rukn);
+  if (segFilter)          pool = pool.filter(({seg}) => seg.id === segFilter);
 
   if (!pool.length) return '<div style="text-align:center;padding:32px 0;color:var(--subtext);font-size:14px">لا توجد نتائج</div>';
 
@@ -5997,7 +6017,7 @@ function openSharedProject(p, sf) {
   cur._role = sf.role;
   if (sf.role !== 'editor') cur._viewOnly = true;
   timers = {};
-  _shotFilter = { done: 'all', face: '', rukn: '', chrono: false };
+  _shotFilter = { done: 'all', face: '', rukn: '', seg: '', chrono: false };
   if (!cur.segments && cur.shots) {
     cur.segments = [{ id: uid(), title: 'المشاهد', collapsed: false, shots: cur.shots }];
     delete cur.shots;
@@ -6259,14 +6279,15 @@ function buildTableViewHTML() {
   const segs = cur.segments || [];
   const ruknList = _getRuknList();
   const ruknOpts = (val) => ruknList.map(r=>`<option value="${r}" ${val===r?'selected':''}>${r}</option>`).join('');
-  const { done: fDone, face: fFace, rukn: fRukn } = _shotFilter;
-  const hasFilter = fDone !== 'all' || fFace || fRukn;
+  const { done: fDone, face: fFace, rukn: fRukn, seg: fSeg } = _shotFilter;
+  const hasFilter = fDone !== 'all' || fFace || fRukn || fSeg;
 
   let rows = '';
   let globalIdx = 0;
   segs.forEach(seg => {
     // filter shots for this segment
     let visibleShots = seg.shots;
+    if (fSeg && seg.id !== fSeg) return; // skip segments not matching segment filter
     if (fDone === 'done')    visibleShots = visibleShots.filter(s => s.done);
     if (fDone === 'pending') visibleShots = visibleShots.filter(s => !s.done);
     if (fFace)               visibleShots = visibleShots.filter(s => (s.face||'').trim() === fFace);
