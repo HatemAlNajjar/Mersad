@@ -45,6 +45,7 @@ self.addEventListener('fetch', e => {
       url.hostname.includes('firestore.googleapis.com') ||
       url.hostname.includes('identitytoolkit.googleapis.com') ||
       url.hostname.includes('gstatic.com') ||
+      url.hostname.includes('google.com') ||
       url.hostname.includes('sheetjs.com')) {
     return;
   }
