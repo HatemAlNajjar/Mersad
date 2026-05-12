@@ -6899,20 +6899,25 @@ function updateUserPill(user) {
 
   // loginPage is shown via CSS (body:not(.auth-ready) #loginPage)
 
-  // Handle redirect result (Safari/mobile Google sign-in)
-  // Handle redirect result with visible feedback
+  // Handle redirect result — show visible banner so we can diagnose iOS PWA issues
+  const _dbg = document.createElement('div');
+  _dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:8px 12px;font-size:12px;z-index:99999;text-align:center;direction:ltr';
+  document.body.appendChild(_dbg);
   try {
+    _dbg.style.background = '#555'; _dbg.style.color = '#fff';
+    _dbg.textContent = 'checking auth…';
     const _rr = await getRedirectResult(auth);
-    if (_rr?.user) console.log('✅ Redirect sign-in ok:', _rr.user.email);
-    else console.log('ℹ️ No redirect result');
+    if (_rr?.user) {
+      _dbg.style.background = '#1a7f37'; _dbg.textContent = '✅ signed in: ' + _rr.user.email;
+      setTimeout(() => _dbg.remove(), 4000);
+    } else {
+      _dbg.style.background = '#333'; _dbg.textContent = 'ℹ️ no redirect result — standalone=' + (navigator.standalone ?? 'n/a');
+      setTimeout(() => _dbg.remove(), 6000);
+    }
   } catch(e) {
-    console.error('❌ Redirect error:', e.code, e.message);
-    // Show error visually so we can debug
-    const errDiv = document.createElement('div');
-    errDiv.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:#c00;color:#fff;padding:10px;font-size:13px;z-index:99999;text-align:center';
-    errDiv.textContent = 'خطأ تسجيل الدخول: ' + (e.code || e.message);
-    document.body.appendChild(errDiv);
-    setTimeout(() => errDiv.remove(), 8000);
+    _dbg.style.background = '#c00'; _dbg.style.color = '#fff';
+    _dbg.textContent = '❌ ' + (e.code || e.message);
+    setTimeout(() => _dbg.remove(), 12000);
   }
 
   let _userSharesUnsub = null;
