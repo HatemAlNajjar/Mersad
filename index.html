@@ -2213,26 +2213,52 @@
   .seg-face-input:focus { outline: none; border-color: var(--accent); }
   .seg-face-input::placeholder { color: var(--subtext); }
 </style>
-<!-- iOS fix: touchend for fixed-position login buttons -->
+<!-- Firebase Compat SDK — loaded as regular scripts (reliable on iOS PWA) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  function triggerLogin(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof window.signInGoogle === 'function') {
-      window.signInGoogle();
-    } else {
-      setTimeout(function() {
-        if (typeof window.signInGoogle === 'function') window.signInGoogle();
-        else alert('الرجاء إعادة تحميل الصفحة والمحاولة مجدداً');
-      }, 1500);
-    }
-  }
-  document.querySelectorAll('.login-btn, #loginBtn').forEach(function(btn) {
-    btn.addEventListener('touchend', triggerLogin, { passive: false });
-    btn.addEventListener('click', triggerLogin);
+(function() {
+  var cfg = {
+    apiKey: "AIzaSyAs9Xgwq50RY1hksVN68ec3zSMPe8eDCno",
+    authDomain: "video-app-4f4b4.firebaseapp.com",
+    projectId: "video-app-4f4b4",
+    storageBucket: "video-app-4f4b4.firebasestorage.app",
+    messagingSenderId: "386409417200",
+    appId: "1:386409417200:web:5c141c486404e1be9d3535"
+  };
+  firebase.initializeApp(cfg);
+  var _auth = firebase.auth();
+
+  // Auth gate via compat SDK — always works regardless of ESM module loading
+  _auth.onAuthStateChanged(function(user) {
+    document.body.classList[user ? 'add' : 'remove']('auth-ready');
   });
-});
+
+  window.signInGoogle = function() {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    _auth.signInWithPopup(provider).catch(function(e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
+        _auth.signInWithRedirect(provider);
+      } else if (e.code !== 'auth/popup-closed-by-user') {
+        alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
+      }
+    });
+  };
+
+  window.signOutUser = function() {
+    if (!confirm('تسجيل الخروج؟')) return;
+    localStorage.clear();
+    _auth.signOut();
+  };
+
+  // Attach to buttons via touchend (iOS fix) + click
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.login-btn, #loginBtn').forEach(function(btn) {
+      btn.addEventListener('touchend', function(e) { e.preventDefault(); window.signInGoogle(); }, { passive: false });
+      btn.addEventListener('click', window.signInGoogle);
+    });
+  });
+})();
 </script>
 </head>
 <body>
@@ -2848,7 +2874,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
@@ -6629,7 +6655,9 @@ const firebaseConfig = {
   measurementId: "G-HFRBXR5V9Y"
 };
 
-const fbApp  = initializeApp(firebaseConfig);
+// Reuse the app already initialized by the compat SDK in the non-module script
+let fbApp;
+try { fbApp = getApp(); } catch(e) { fbApp = initializeApp(firebaseConfig); }
 const auth   = getAuth(fbApp);
 const db     = getFirestore(fbApp);
 
