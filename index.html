@@ -2234,8 +2234,22 @@
     document.body.classList[user ? 'add' : 'remove']('auth-ready');
   });
 
+  // Handle redirect result on load (iOS PWA returns here after Google auth)
+  _auth.getRedirectResult().then(function(result) {
+    if (result && result.user) console.log('✅ redirect sign-in ok:', result.user.email);
+  }).catch(function(e) {
+    if (e.code !== 'auth/no-auth-event') {
+      alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
+    }
+  });
+
   window.signInGoogle = function() {
     var provider = new firebase.auth.GoogleAuthProvider();
+    // iOS PWA standalone: popup opens outside the app, use redirect instead
+    if (window.navigator.standalone === true) {
+      _auth.signInWithRedirect(provider);
+      return;
+    }
     _auth.signInWithPopup(provider).catch(function(e) {
       if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
         _auth.signInWithRedirect(provider);
@@ -6786,6 +6800,11 @@ storeFolders = storeFoldersSync;
 // ── Auth ──
 function signInGoogle() {
   const provider = new GoogleAuthProvider();
+  // iOS PWA standalone: use redirect (popup opens outside app and result is lost)
+  if (window.navigator.standalone === true) {
+    signInWithRedirect(auth, provider);
+    return;
+  }
   signInWithPopup(auth, provider).catch(e => {
     if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
       signInWithRedirect(auth, provider).catch(e2 => {
