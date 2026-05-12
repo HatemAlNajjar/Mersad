@@ -2234,29 +2234,22 @@
     document.body.classList[user ? 'add' : 'remove']('auth-ready');
   });
 
-  // Handle redirect result on load (iOS PWA returns here after Google auth)
-  _auth.getRedirectResult().then(function(result) {
-    if (result && result.user) console.log('✅ redirect sign-in ok:', result.user.email);
-  }).catch(function(e) {
-    if (e.code !== 'auth/no-auth-event') {
-      alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-    }
-  });
-
+  // signInGoogle: delegate to module's _mSignIn (handles persistence + redirect/popup)
+  // Fall back to compat-only redirect if module hasn't loaded yet
   window.signInGoogle = function() {
+    if (window._mSignIn) { window._mSignIn(); return; }
     var provider = new firebase.auth.GoogleAuthProvider();
-    // iOS PWA standalone: popup opens outside the app, use redirect instead
     if (window.navigator.standalone === true) {
       _auth.signInWithRedirect(provider);
-      return;
+    } else {
+      _auth.signInWithPopup(provider).catch(function(e) {
+        if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
+          _auth.signInWithRedirect(provider);
+        } else if (e.code !== 'auth/popup-closed-by-user') {
+          alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
+        }
+      });
     }
-    _auth.signInWithPopup(provider).catch(function(e) {
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
-        _auth.signInWithRedirect(provider);
-      } else if (e.code !== 'auth/popup-closed-by-user') {
-        alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-      }
-    });
   };
 
   window.signOutUser = function() {
@@ -2889,7 +2882,7 @@
 
 <script type="module">
 import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -6798,9 +6791,11 @@ const storeFoldersSync  = (f) => { _origStoreFolders(f); saveFoldersRemote(f); }
 storeFolders = storeFoldersSync;
 
 // ── Auth ──
-function signInGoogle() {
+// Exposed on window so compat-SDK onclick handlers can call it once module loads
+window._mSignIn = async function() {
   const provider = new GoogleAuthProvider();
-  // iOS PWA standalone: use redirect (popup opens outside app and result is lost)
+  // Force localStorage persistence so redirect state survives iOS WKWebView process kill
+  await setPersistence(auth, browserLocalPersistence);
   if (window.navigator.standalone === true) {
     signInWithRedirect(auth, provider);
     return;
@@ -6814,7 +6809,8 @@ function signInGoogle() {
       alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
     }
   });
-}
+};
+function signInGoogle() { window._mSignIn(); }
 
 // Attach login button listeners directly (don't rely solely on onclick attribute)
 document.querySelectorAll('.login-btn, #loginBtn').forEach(btn => {
@@ -6901,23 +6897,27 @@ function updateUserPill(user) {
 
   // Handle redirect result — show visible banner so we can diagnose iOS PWA issues
   const _dbg = document.createElement('div');
-  _dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:8px 12px;font-size:12px;z-index:99999;text-align:center;direction:ltr';
+  _dbg.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:10px 14px;font-size:13px;font-weight:600;z-index:99999;text-align:center;direction:ltr;letter-spacing:.3px';
   document.body.appendChild(_dbg);
+  const _sa = navigator.standalone;
   try {
     _dbg.style.background = '#555'; _dbg.style.color = '#fff';
-    _dbg.textContent = 'checking auth…';
+    _dbg.textContent = 'checking auth… (standalone=' + _sa + ')';
     const _rr = await getRedirectResult(auth);
     if (_rr?.user) {
-      _dbg.style.background = '#1a7f37'; _dbg.textContent = '✅ signed in: ' + _rr.user.email;
-      setTimeout(() => _dbg.remove(), 4000);
+      _dbg.style.background = '#1a7f37'; _dbg.textContent = '✅ SIGNED IN: ' + _rr.user.email;
+      setTimeout(() => _dbg.remove(), 8000);
     } else {
-      _dbg.style.background = '#333'; _dbg.textContent = 'ℹ️ no redirect result — standalone=' + (navigator.standalone ?? 'n/a');
-      setTimeout(() => _dbg.remove(), 6000);
+      _dbg.style.background = '#8a4800'; _dbg.style.color = '#fff';
+      _dbg.textContent = '⚠️ no redirect result | standalone=' + _sa + ' | tap to dismiss';
+      _dbg.onclick = () => _dbg.remove();
+      setTimeout(() => _dbg.remove(), 30000);
     }
   } catch(e) {
     _dbg.style.background = '#c00'; _dbg.style.color = '#fff';
-    _dbg.textContent = '❌ ' + (e.code || e.message);
-    setTimeout(() => _dbg.remove(), 12000);
+    _dbg.textContent = '❌ ' + (e.code || e.message) + ' | tap to dismiss';
+    _dbg.onclick = () => _dbg.remove();
+    setTimeout(() => _dbg.remove(), 30000);
   }
 
   let _userSharesUnsub = null;
