@@ -6775,21 +6775,7 @@ async function _handleGISCredential(response) {
   }
 }
 
-// Set _mSignIn immediately so the button works even before GIS loads
-window._mSignIn = function() {
-  if (typeof google !== 'undefined' && google.accounts?.id) {
-    google.accounts.id.prompt(notification => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // One Tap suppressed — click the hidden rendered GIS button
-        const btn = document.getElementById('gsi-btn')?.querySelector('[role="button"]');
-        if (btn) { btn.style.pointerEvents = 'auto'; btn.click(); }
-        else { signInWithRedirect(auth, new GoogleAuthProvider()); }
-      }
-    });
-  } else {
-    alert('جارٍ تحميل Google، حاول مرة أخرى بعد ثانية');
-  }
-};
+let _gisReady = false;
 
 // Initialize GIS when its library loads
 const _gisWait = setInterval(() => {
@@ -6805,9 +6791,34 @@ const _gisWait = setInterval(() => {
       });
       const el = document.getElementById('gsi-btn');
       if (el) google.accounts.id.renderButton(el, { type: 'standard', size: 'large', width: '280' });
-    } catch(e) { console.warn('GIS init error:', e); }
+      _gisReady = true;
+    } catch(e) { console.warn('GIS init:', e); }
   }
 }, 100);
+
+// _mSignIn: popup for regular browser, GIS One Tap for iOS PWA (no navigation leaves WKWebView)
+window._mSignIn = function() {
+  if (navigator.standalone !== true) {
+    // Desktop or mobile browser — popup is reliable
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(e => {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
+        signInWithRedirect(auth, provider);
+      } else if (e.code !== 'auth/popup-closed-by-user') {
+        alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
+      }
+    });
+    return;
+  }
+  // iOS PWA standalone — GIS One Tap stays inside WKWebView
+  if (!_gisReady) { alert('جارٍ تحميل Google، حاول مرة أخرى'); return; }
+  google.accounts.id.prompt(notification => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      const btn = document.getElementById('gsi-btn')?.querySelector('[role="button"]');
+      if (btn) { btn.style.pointerEvents = 'auto'; btn.click(); }
+    }
+  });
+};
 
 window._mSignOut = async function() {
   if (!confirm('تسجيل الخروج؟')) return;
