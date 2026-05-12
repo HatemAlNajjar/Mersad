@@ -158,15 +158,6 @@
     .topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
     .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-    /* ── Auth gate: hide entire app until logged in ── */
-    body:not(.auth-ready) .topbar,
-    body:not(.auth-ready) #homePage,
-    body:not(.auth-ready) #projectPage,
-    body:not(.auth-ready) #shotFullscreen,
-    body:not(.auth-ready) #segFullscreen,
-    body:not(.auth-ready) .mobile-fab { display: none !important; }
-    body:not(.auth-ready) #loginPage { display: flex !important; visibility: visible !important; opacity: 1 !important; }
-
     .brand {
       font-size: 15px; font-weight: 600; color: var(--text-1);
       letter-spacing: -0.2px;
@@ -175,7 +166,7 @@
 
     .brand-icon {
       width: 26px; height: 26px;
-      background: #ffffff;
+      background: linear-gradient(135deg, #0a84ff, #5e5ce6);
       border-radius: 7px;
       display: flex; align-items: center; justify-content: center;
       font-size: 13px;
@@ -580,28 +571,6 @@
     }
     .sf-select:focus, .sf-select.sf-active { border-color: var(--accent); outline: none; }
     .sf-label { font-size: 11px; color: var(--subtext); font-weight: 500; white-space: nowrap; }
-    .sf-col-btn {
-      position: relative; display: flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
-      border: 1.5px solid var(--border); background: transparent; color: var(--text-2);
-      cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap;
-    }
-    .sf-col-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .sf-col-btn.sf-active { border-color: var(--accent); color: var(--accent); }
-    .sf-col-dropdown {
-      position: absolute; top: calc(100% + 6px); left: 0; z-index: 999;
-      background: var(--surface-1); border: 1px solid var(--border);
-      border-radius: 10px; padding: 6px 4px; min-width: 130px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: none; flex-direction: column; gap: 2px;
-    }
-    .sf-col-dropdown.open { display: flex; }
-    .sf-col-item {
-      display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-      border-radius: 7px; cursor: pointer; font-size: 12px; color: var(--text-1);
-      transition: background 0.12s; user-select: none;
-    }
-    .sf-col-item:hover { background: var(--hover); }
-    .sf-col-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
     .shot-seg-label {
       font-size: 10px; font-weight: 600; color: var(--subtext);
       padding: 2px 8px; letter-spacing: 0.3px; margin-bottom: 2px;
@@ -1731,7 +1700,6 @@
     cursor: pointer; font-family: inherit; width: 100%;
     justify-content: center; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     transition: box-shadow 0.2s, transform 0.15s;
-    touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1);
   }
   .login-btn:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.25); transform: translateY(-1px); }
   .login-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
@@ -2213,20 +2181,6 @@
   .seg-face-input:focus { outline: none; border-color: var(--accent); }
   .seg-face-input::placeholder { color: var(--subtext); }
 </style>
-<!-- Google Identity Services — works inside iOS WKWebView (no redirect/popup needed) -->
-<script src="https://accounts.google.com/gsi/client" async></script>
-<script>
-window.signInGoogle = function() {
-  if (window._mSignIn) { window._mSignIn(); return; }
-  setTimeout(function() { if (window._mSignIn) window._mSignIn(); }, 300);
-};
-window.signOutUser = function() { if (window._mSignOut) window._mSignOut(); };
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.login-btn, #loginBtn').forEach(function(btn) {
-    btn.addEventListener('touchend', function(e) { e.preventDefault(); window.signInGoogle(); }, { passive: false });
-  });
-});
-</script>
 </head>
 <body>
 
@@ -2240,8 +2194,6 @@ document.addEventListener('DOMContentLoaded', function() {
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       تسجيل الدخول بـ Google
     </button>
-    <!-- GIS rendered button (hidden, triggered programmatically as fallback) -->
-    <div id="gsi-btn" style="position:absolute;opacity:0;pointer-events:none;height:0;overflow:hidden"></div>
   </div>
 </div>
 
@@ -2390,18 +2342,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <option value="">الكل</option>
       </select>
       <div class="sf-divider"></div>
-      <div style="position:relative">
-        <button class="sf-col-btn" id="sfColBtn" onclick="toggleColDropdown(event)" title="إظهار/إخفاء الأعمدة">
-          <span>الأعمدة</span><span style="font-size:10px">▾</span>
-        </button>
-        <div class="sf-col-dropdown" id="sfColDropdown">
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-title"   onchange="setColVis('title',this.checked)"  > المشهد</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-content" onchange="setColVis('content',this.checked)"> المحتوى</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-face"    onchange="setColVis('face',this.checked)"   > الوجه</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-files"   onchange="setColVis('files',this.checked)"  > الملفات</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-done"    onchange="setColVis('done',this.checked)"   > الإتمام</label>
-        </div>
-      </div>
     </div>
 
     <div id="shotsList"></div>
@@ -2843,8 +2783,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
 <script type="module">
-import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -3631,7 +3571,7 @@ function addShotToSeg(segId) {
   const s={id:uid(),title:'مشهد '+(_globalShotCount()+1),done:false,content:'',contentRich:'',shooting:'',editMusic:'',filename:'',filename2:'',timecodeNotes:[],tcOpen:false,collapsed:false};
   seg.shots.push(s);
   if (_tableView) {
-    const list = document.getElementById('shotsList');
+    const list = document.getElementById('shotList');
     if (list) list.innerHTML = buildTableViewHTML();
   } else {
     const body=document.getElementById('segbody-'+segId);
@@ -5516,7 +5456,7 @@ async function saveUserProfile(user) {
   if (!user) return;
   try {
     await setDoc(doc(db, 'userProfiles', user.uid), {
-      email: (user.email || '').toLowerCase(),
+      email: user.email,
       displayName: user.displayName || '',
       photoURL: user.photoURL || ''
     }, { merge: true });
@@ -6220,38 +6160,6 @@ function tpOpenDisplay() {
 // ── Table View ──
 let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
-const _colVisDefault = { title: true, content: true, face: true, files: true, done: true };
-let _tableColVis = Object.assign({}, _colVisDefault, JSON.parse(localStorage.getItem('sm_tableColVis') || '{}'));
-
-function toggleColDropdown(e) {
-  e.stopPropagation();
-  const dd = document.getElementById('sfColDropdown');
-  if (!dd) return;
-  // sync checkboxes with current state
-  Object.keys(_tableColVis).forEach(k => {
-    const cb = document.getElementById('sfCol-' + k);
-    if (cb) cb.checked = _tableColVis[k];
-  });
-  dd.classList.toggle('open');
-  const btn = document.getElementById('sfColBtn');
-  if (btn) btn.classList.toggle('sf-active', dd.classList.contains('open'));
-}
-
-function setColVis(col, visible) {
-  _tableColVis[col] = visible;
-  localStorage.setItem('sm_tableColVis', JSON.stringify(_tableColVis));
-  const list = document.getElementById('shotList');
-  if (list) list.innerHTML = buildTableViewHTML();
-}
-
-document.addEventListener('click', () => {
-  const dd = document.getElementById('sfColDropdown');
-  if (dd && dd.classList.contains('open')) {
-    dd.classList.remove('open');
-    const btn = document.getElementById('sfColBtn');
-    if (btn) btn.classList.remove('sf-active');
-  }
-});
 
 
 
@@ -6279,14 +6187,11 @@ function buildTableViewHTML() {
     const pendingShots = totalShots - doneShots;
     const segRuknOpts = ruknList.map(r=>`<option value="${r}" ${(seg.rukn||'')===r?'selected':''}>${r}</option>`).join('');
     const {val: segFaceVal, ph: segFacePh} = _segFaceLabel(seg);
-    const cv = _tableColVis;
-    const colspanInfo = Math.max(1, (cv.title?1:0)+(cv.content?1:0)+(cv.face?1:0));
-    const colspanProg = Math.max(1, (cv.files?1:0)+(cv.done?1:0));
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
       <td style="white-space:nowrap;width:36px">
         <span id="st-arr-${seg.id}" style="display:inline-block;transition:transform .2s;transform:${isCol?'rotate(-90deg)':'rotate(0)'}">▾</span>
       </td>
-      <td colspan="${colspanInfo}" style="white-space:nowrap" onclick="event.stopPropagation()">
+      <td colspan="3" style="white-space:nowrap" onclick="event.stopPropagation()">
         <span style="margin-left:4px">🎬</span>
         <input value="${esc(seg.title||'')}" placeholder="اسم المقطع"
           oninput="setSegTitle('${seg.id}',this.value)" onchange="autoSave()"
@@ -6301,7 +6206,7 @@ function buildTableViewHTML() {
           oninput="setSegFaceAll('${seg.id}',this.value)" onchange="autoSave()"
           style="font-size:11px;padding:2px 6px;width:auto;min-width:60px;max-width:120px;display:inline-block">
       </td>
-      <td colspan="${colspanProg}" style="padding:4px 12px" onclick="event.stopPropagation()">
+      <td colspan="2" style="padding:4px 12px" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;direction:rtl">
           <span id="st-prog-count-${seg.id}" style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">${doneShots} / ${totalShots}</span>
           <div style="flex:1;min-width:60px;height:5px;background:rgba(52,199,89,0.18);border-radius:3px;overflow:hidden;transform:scaleX(-1)">
@@ -6309,15 +6214,9 @@ function buildTableViewHTML() {
           </div>
         </div>
       </td></tr>`;
-    const cv = _tableColVis;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
-      <th style="width:36px">#</th>
-      ${cv.title   ? `<th style="width:14%">المشهد</th>`   : ''}
-      ${cv.content ? `<th style="width:40%">المحتوى</th>` : ''}
-      ${cv.face    ? `<th style="width:12%">الوجه</th>`    : ''}
-      ${cv.files   ? `<th style="width:16%">الملفات</th>` : ''}
-      ${cv.done    ? `<th style="width:44px">✓</th>`       : ''}
-    </tr>`;
+      <th style="width:36px">#</th><th style="width:14%">المشهد</th><th style="width:40%">المحتوى</th>
+      <th style="width:12%">الوجه</th><th style="width:16%">الملفات</th><th style="width:44px">✓</th></tr>`;
 
     const sortedShots = [...visibleShots];
     if (_tableSort === 'face') sortedShots.sort((a,b)=>(a.face||'').localeCompare(b.face||'','ar'));
@@ -6329,42 +6228,41 @@ function buildTableViewHTML() {
         <td class="st-num" title="فتح المشهد" style="cursor:default;user-select:none;position:relative"><div onclick="openShotFull('${s.id}')" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--text-3);cursor:pointer;line-height:1" title="فتح المشهد">⛶</div><div style="padding-top:18px;font-size:11px;cursor:pointer" onclick="openShotFull('${s.id}')">${globalIdx}</div>
           <div class="st-row-drag" onclick="event.stopPropagation()" onmousedown="stRowResizeStart(event,'${s.id}')" ontouchstart="stRowResizeStart(event,'${s.id}')"></div>
         </td>
-        ${cv.title ? `<td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
+        <td><textarea class="st-cell-input st-title-input" placeholder="عنوان المشهد" rows="1"
           style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
-          oninput="stSet('${s.id}','title',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.title||'')}</textarea></td>` : ''}
-        ${cv.content ? `<td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
+          oninput="stSet('${s.id}','title',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.title||'')}</textarea></td>
+        <td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
           style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
-          oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>` : ''}
-        ${cv.face ? `<td>
+          oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>
+        <td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
             oninput="stSet('${s.id}','face',this.value);_refreshSegFaceEl('${seg.id}')" onchange="autoSave()">
-        </td>` : ''}
-        ${cv.files ? `<td style="padding:0">
+        </td>
+        <td style="padding:0">
           <input class="st-cell-input st-file-input" value="${esc(s.filename||'')}" placeholder="A — الرقم"
             oninput="fmtFilename(this,'${s.id}','filename','A')" onchange="autoSave()" inputmode="numeric"
             style="border-bottom:1px solid var(--border)">
           <input class="st-cell-input st-file-input" value="${esc(s.filename2||'')}" placeholder="B — الرقم"
             oninput="fmtFilename(this,'${s.id}','filename2','B')" onchange="autoSave()" inputmode="numeric">
-        </td>` : ''}
-        ${cv.done ? `<td class="st-done-cell">
+        </td>
+        <td class="st-done-cell">
           <button onclick="stDelShot('${s.id}')" title="حذف المشهد"
             style="position:absolute;top:4px;left:4px;background:none;border:none;cursor:pointer;color:var(--text-3);font-size:10px;padding:0;line-height:1"
             onmouseover="this.style.color='#e55'" onmouseout="this.style.color='var(--text-3)'">✕</button>
           <input type="checkbox" class="st-done-cb" ${s.done?'checked':''}
             onchange="stToggleDone('${s.id}',this.checked)">
-        </td>` : ''}
+        </td>
       </tr>`;
     });
   });
 
-  const totalCols = 1 + (_tableColVis.title?1:0) + (_tableColVis.content?1:0) + (_tableColVis.face?1:0) + (_tableColVis.files?1:0) + (_tableColVis.done?1:0);
-  if (hasFilter && !rows) rows = `<tr><td colspan="${totalCols}" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
+  if (hasFilter && !rows) rows = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
 
   return `<div class="shots-table-wrap"><table class="shots-table">
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td colspan="${totalCols}" style="padding:10px 12px;border-top:1px solid var(--border)">
+        <td colspan="6" style="padding:10px 12px;border-top:1px solid var(--border)">
           <button onclick="addShotToLast()" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--subtext);font-size:12px;padding:6px 18px;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">+ إضافة مشهد</button>
         </td>
       </tr>
@@ -6390,7 +6288,7 @@ function stDelShot(shotId) {
     if (!cur._trash.shots) cur._trash.shots = [];
     cur._trash.shots.unshift({ ...deletedShot, _deletedAt: Date.now(), _parentSeg: parentSegTitle });
   }
-  const list = document.getElementById('shotsList');
+  const list = document.getElementById('shotList');
   if (list) list.innerHTML = buildTableViewHTML();
   updateProgress(); autoSave();
 }
@@ -6423,7 +6321,7 @@ function toggleTableView(val) {
 function setTableSort(val) {
   _tableSort = val;
   localStorage.setItem('sm_tableSort', val);
-  const list = document.getElementById('shotsList');
+  const list = document.getElementById('shotList');
   if (list) list.innerHTML = buildTableViewHTML();
 }
 
@@ -6624,18 +6522,9 @@ const firebaseConfig = {
   measurementId: "G-HFRBXR5V9Y"
 };
 
-let fbApp;
-try { fbApp = getApp(); } catch(e) { fbApp = initializeApp(firebaseConfig); }
-
-// IndexedDB persistence — more reliable than sessionStorage on iOS WKWebView
-let auth;
-try {
-  auth = initializeAuth(fbApp, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
-} catch(e) {
-  auth = getAuth(fbApp); // Already initialized — reuse existing instance
-}
-
-const db = getFirestore(fbApp);
+const fbApp  = initializeApp(firebaseConfig);
+const auth   = getAuth(fbApp);
+const db     = getFirestore(fbApp);
 
 let fbUser = null;
 
@@ -6760,81 +6649,25 @@ const storeFoldersSync  = (f) => { _origStoreFolders(f); saveFoldersRemote(f); }
 storeFolders = storeFoldersSync;
 
 // ── Auth ──
-const GIS_CLIENT_ID = '386409417200-rsoqbgrqm2q57m5a9a4tkkjk3f1jfhpi.apps.googleusercontent.com';
-
-// CSS auth-gate
-onAuthStateChanged(auth, user => {
-  document.body.classList[user ? 'add' : 'remove']('auth-ready');
-});
-
-async function _handleGISCredential(response) {
-  try {
-    await signInWithCredential(auth, GoogleAuthProvider.credential(response.credential));
-  } catch(e) {
+// Must be a regular (non-async) function so signInWithPopup is called
+// synchronously from the user gesture — Safari blocks popups from async functions
+function signInGoogle() {
+  const provider = new GoogleAuthProvider();
+  // Use redirect for all — more reliable on Safari/iPhone
+  signInWithRedirect(auth, provider).catch(e => {
+    console.error('signInWithRedirect failed:', e.code, e.message);
     alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-  }
+  });
 }
 
-let _gisReady = false;
-
-// Initialize GIS when its library loads
-const _gisWait = setInterval(() => {
-  if (typeof google !== 'undefined' && google.accounts?.id) {
-    clearInterval(_gisWait);
-    try {
-      google.accounts.id.initialize({
-        client_id: GIS_CLIENT_ID,
-        callback: _handleGISCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        itp_support: true,
-      });
-      const el = document.getElementById('gsi-btn');
-      if (el) google.accounts.id.renderButton(el, { type: 'standard', size: 'large', width: '280' });
-      _gisReady = true;
-    } catch(e) { console.warn('GIS init:', e); }
-  }
-}, 100);
-
-// _mSignIn: popup for regular browser, GIS One Tap for iOS PWA (no navigation leaves WKWebView)
-window._mSignIn = function() {
-  if (navigator.standalone !== true) {
-    // Desktop or mobile browser — popup is reliable
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(e => {
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
-        signInWithRedirect(auth, provider);
-      } else if (e.code !== 'auth/popup-closed-by-user') {
-        alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-      }
-    });
-    return;
-  }
-  // iOS PWA standalone — GIS One Tap stays inside WKWebView
-  if (!_gisReady) { alert('جارٍ تحميل Google، حاول مرة أخرى'); return; }
-  google.accounts.id.prompt(notification => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const btn = document.getElementById('gsi-btn')?.querySelector('[role="button"]');
-      if (btn) { btn.style.pointerEvents = 'auto'; btn.click(); }
-    }
-  });
-};
-
-window._mSignOut = async function() {
+async function signOutUser() {
   if (!confirm('تسجيل الخروج؟')) return;
+  // Clear this user's local cache
   localStorage.removeItem(lsKey());
   localStorage.removeItem(lsFKey());
   cur = null; timers = {};
-  if (typeof google !== 'undefined' && google.accounts?.id) google.accounts.id.disableAutoSelect();
   await signOut(auth);
-};
-
-function signInGoogle() { window._mSignIn(); }
-async function signOutUser() { window._mSignOut(); }
-
-document.querySelectorAll('.login-btn, #loginBtn').forEach(btn => {
-  btn.addEventListener('click', signInGoogle);
-});
+}
 
 function updateUserPill(user) {
   const pill    = document.getElementById('userPill');
@@ -6861,7 +6694,6 @@ function updateUserPill(user) {
   // Check for project share link — works without login
   const shareId = new URLSearchParams(location.search).get('share');
   if (shareId) {
-    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     try {
       const snap = await getDoc(doc(db, 'sharedProjects', shareId));
@@ -6887,12 +6719,10 @@ function updateUserPill(user) {
   // Check for folder link — requires login to read live data
   const folderLinkId = new URLSearchParams(location.search).get('folderLink');
   if (folderLinkId) {
-    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     onAuthStateChanged(auth, async user => {
       fbUser = user; updateUserPill(user);
       if (!user) {
-        document.body.classList.remove('auth-ready');
         // Show login prompt
         const lp = document.getElementById('loginPage');
         lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
@@ -6903,13 +6733,22 @@ function updateUserPill(user) {
     return;
   }
 
-  // Handle redirect result on app load (completes signInWithRedirect flow)
+  const lp = document.getElementById('loginPage'); lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
+
+  // Handle redirect result (Safari/mobile Google sign-in)
+  // Handle redirect result with visible feedback
   try {
-    await getRedirectResult(auth);
+    const _rr = await getRedirectResult(auth);
+    if (_rr?.user) console.log('✅ Redirect sign-in ok:', _rr.user.email);
+    else console.log('ℹ️ No redirect result');
   } catch(e) {
-    if (e.code !== 'auth/no-auth-event' && e.code !== 'auth/cancelled-popup-request') {
-      alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-    }
+    console.error('❌ Redirect error:', e.code, e.message);
+    // Show error visually so we can debug
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:#c00;color:#fff;padding:10px;font-size:13px;z-index:99999;text-align:center';
+    errDiv.textContent = 'خطأ تسجيل الدخول: ' + (e.code || e.message);
+    document.body.appendChild(errDiv);
+    setTimeout(() => errDiv.remove(), 8000);
   }
 
   let _userSharesUnsub = null;
@@ -6919,25 +6758,27 @@ function updateUserPill(user) {
     updateUserPill(user);
 
     if (!user) {
-      // Not logged in → show login page (body stays without auth-ready class)
-      document.body.classList.remove('auth-ready');
+      // Not logged in → hide login overlay, show home in guest mode
+      document.getElementById('loginPage').style.display = 'none';
       document.getElementById('projectPage').classList.remove('active');
       if (_userSharesUnsub) { _userSharesUnsub(); _userSharesUnsub = null; }
       _sharedFolders = [];
+      showHome();
       return;
     }
 
-    // Logged in → reveal app
-    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     _showSyncStatus(true);
 
     // ── Save user profile for email lookup ──
     await saveUserProfile(user).catch(() => {});
 
-    // ── Process pending invites & load shared folders before first render ──
-    await processPendingInvites(user).catch(() => {});
-    await loadMySharedFolders().catch(() => {});
+    // ── Process pending invites → then load shared folders → re-render home ──
+    (async () => {
+      await processPendingInvites(user).catch(() => {});
+      await loadMySharedFolders().catch(() => {});
+      if (document.getElementById('homePage').classList.contains('active')) renderHome();
+    })();
 
     // ── Real-time listener: update shared folders whenever owner adds this user ──
     if (_userSharesUnsub) _userSharesUnsub();
