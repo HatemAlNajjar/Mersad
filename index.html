@@ -2213,17 +2213,14 @@
   .seg-face-input:focus { outline: none; border-color: var(--accent); }
   .seg-face-input::placeholder { color: var(--subtext); }
 </style>
-<!-- signInGoogle / signOutUser — set by module once loaded -->
+<!-- Google Identity Services — works inside iOS WKWebView (no redirect/popup needed) -->
+<script src="https://accounts.google.com/gsi/client" async></script>
 <script>
 window.signInGoogle = function() {
   if (window._mSignIn) { window._mSignIn(); return; }
-  // Module not yet ready — retry in 200ms
-  setTimeout(function() { if (window._mSignIn) window._mSignIn(); }, 200);
+  setTimeout(function() { if (window._mSignIn) window._mSignIn(); }, 300);
 };
-window.signOutUser = function() {
-  if (window._mSignOut) window._mSignOut();
-};
-// touchend fix for iOS position:fixed buttons
+window.signOutUser = function() { if (window._mSignOut) window._mSignOut(); };
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.login-btn, #loginBtn').forEach(function(btn) {
     btn.addEventListener('touchend', function(e) { e.preventDefault(); window.signInGoogle(); }, { passive: false });
@@ -2243,6 +2240,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       تسجيل الدخول بـ Google
     </button>
+    <!-- GIS rendered button (hidden, triggered programmatically as fallback) -->
+    <div id="gsi-btn" style="position:absolute;opacity:0;pointer-events:none;height:0;overflow:hidden"></div>
   </div>
 </div>
 
@@ -2845,7 +2844,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script type="module">
 import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -6766,25 +6765,62 @@ const storeFoldersSync  = (f) => { _origStoreFolders(f); saveFoldersRemote(f); }
 storeFolders = storeFoldersSync;
 
 // ── Auth ──
-// CSS auth-gate: add/remove body class so login page shows/hides via CSS
+const GIS_CLIENT_ID = '386409417200-rsoqbgrqm2q57m5a9a4tkkjk3f1jfhpi.apps.googleusercontent.com';
+
+// CSS auth-gate
 onAuthStateChanged(auth, user => {
   document.body.classList[user ? 'add' : 'remove']('auth-ready');
 });
 
-window._mSignIn = function() {
-  const provider = new GoogleAuthProvider();
-  // iOS PWA standalone: use redirect (popup postMessage can't reach the PWA webview)
-  if (navigator.standalone === true) {
-    signInWithRedirect(auth, provider);
-    return;
+async function _handleGISCredential(response) {
+  try {
+    await signInWithCredential(auth, GoogleAuthProvider.credential(response.credential));
+  } catch(e) {
+    alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
   }
-  signInWithPopup(auth, provider).catch(e => {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request') {
-      signInWithRedirect(auth, provider);
-    } else if (e.code !== 'auth/popup-closed-by-user') {
-      alert('تعذّر تسجيل الدخول: ' + (e.code || e.message));
-    }
+}
+
+function _setupGIS() {
+  google.accounts.id.initialize({
+    client_id: GIS_CLIENT_ID,
+    callback: _handleGISCredential,
+    auto_select: false,
+    cancel_on_tap_outside: false,
+    itp_support: true,
   });
+  // Render a hidden GIS button as programmatic fallback
+  const el = document.getElementById('gsi-btn');
+  if (el) {
+    google.accounts.id.renderButton(el, { type: 'standard', size: 'large', width: '280' });
+  }
+}
+
+// Wait for GIS library to load then initialize
+const _gisWait = setInterval(() => {
+  if (typeof google !== 'undefined' && google.accounts?.id) {
+    clearInterval(_gisWait);
+    _setupGIS();
+  }
+}, 100);
+
+window._mSignIn = function() {
+  if (typeof google !== 'undefined' && google.accounts?.id) {
+    // GIS: shows in-page account picker — no Safari navigation, works in iOS PWA
+    google.accounts.id.prompt(notification => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // One Tap suppressed — click the hidden GIS rendered button
+        const btn = document.getElementById('gsi-btn')?.querySelector('[role="button"]');
+        if (btn) { btn.style.pointerEvents = 'auto'; btn.click(); }
+        else {
+          // Last resort: standard redirect
+          signInWithRedirect(auth, new GoogleAuthProvider());
+        }
+      }
+    });
+  } else {
+    // GIS not loaded yet — redirect fallback
+    signInWithRedirect(auth, new GoogleAuthProvider());
+  }
 };
 
 window._mSignOut = async function() {
@@ -6792,11 +6828,11 @@ window._mSignOut = async function() {
   localStorage.removeItem(lsKey());
   localStorage.removeItem(lsFKey());
   cur = null; timers = {};
+  if (typeof google !== 'undefined' && google.accounts?.id) google.accounts.id.disableAutoSelect();
   await signOut(auth);
 };
 
 function signInGoogle() { window._mSignIn(); }
-
 async function signOutUser() { window._mSignOut(); }
 
 document.querySelectorAll('.login-btn, #loginBtn').forEach(btn => {
