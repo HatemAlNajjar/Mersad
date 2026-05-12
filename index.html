@@ -2844,7 +2844,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script type="module">
 import { initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, where }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -6627,17 +6627,12 @@ const firebaseConfig = {
 let fbApp;
 try { fbApp = getApp(); } catch(e) { fbApp = initializeApp(firebaseConfig); }
 
-// Use IndexedDB persistence so redirect state survives iOS WKWebView process restarts
-// (sessionStorage — Firebase's default — is wiped when iOS kills the WKWebView)
+// IndexedDB persistence — more reliable than sessionStorage on iOS WKWebView
 let auth;
 try {
-  auth = initializeAuth(fbApp, {
-    persistence: [indexedDBLocalPersistence, browserLocalPersistence]
-  });
+  auth = initializeAuth(fbApp, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
 } catch(e) {
-  // Already initialized (e.g. HMR) — grab the existing instance
-  const { getAuth } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
-  auth = getAuth(fbApp);
+  auth = getAuth(fbApp); // Already initialized — reuse existing instance
 }
 
 const db = getFirestore(fbApp);
@@ -6780,48 +6775,39 @@ async function _handleGISCredential(response) {
   }
 }
 
-function _setupGIS() {
-  google.accounts.id.initialize({
-    client_id: GIS_CLIENT_ID,
-    callback: _handleGISCredential,
-    auto_select: false,
-    cancel_on_tap_outside: false,
-    itp_support: true,
-  });
-  // Render a hidden GIS button as programmatic fallback
-  const el = document.getElementById('gsi-btn');
-  if (el) {
-    google.accounts.id.renderButton(el, { type: 'standard', size: 'large', width: '280' });
-  }
-}
-
-// Wait for GIS library to load then initialize
-const _gisWait = setInterval(() => {
-  if (typeof google !== 'undefined' && google.accounts?.id) {
-    clearInterval(_gisWait);
-    _setupGIS();
-  }
-}, 100);
-
+// Set _mSignIn immediately so the button works even before GIS loads
 window._mSignIn = function() {
   if (typeof google !== 'undefined' && google.accounts?.id) {
-    // GIS: shows in-page account picker — no Safari navigation, works in iOS PWA
     google.accounts.id.prompt(notification => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // One Tap suppressed — click the hidden GIS rendered button
+        // One Tap suppressed — click the hidden rendered GIS button
         const btn = document.getElementById('gsi-btn')?.querySelector('[role="button"]');
         if (btn) { btn.style.pointerEvents = 'auto'; btn.click(); }
-        else {
-          // Last resort: standard redirect
-          signInWithRedirect(auth, new GoogleAuthProvider());
-        }
+        else { signInWithRedirect(auth, new GoogleAuthProvider()); }
       }
     });
   } else {
-    // GIS not loaded yet — redirect fallback
-    signInWithRedirect(auth, new GoogleAuthProvider());
+    alert('جارٍ تحميل Google، حاول مرة أخرى بعد ثانية');
   }
 };
+
+// Initialize GIS when its library loads
+const _gisWait = setInterval(() => {
+  if (typeof google !== 'undefined' && google.accounts?.id) {
+    clearInterval(_gisWait);
+    try {
+      google.accounts.id.initialize({
+        client_id: GIS_CLIENT_ID,
+        callback: _handleGISCredential,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        itp_support: true,
+      });
+      const el = document.getElementById('gsi-btn');
+      if (el) google.accounts.id.renderButton(el, { type: 'standard', size: 'large', width: '280' });
+    } catch(e) { console.warn('GIS init error:', e); }
+  }
+}, 100);
 
 window._mSignOut = async function() {
   if (!confirm('تسجيل الخروج؟')) return;
