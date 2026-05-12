@@ -1,6 +1,6 @@
 // مدير التصوير — Service Worker
-const CACHE        = 'musawwir-v9';
-const STATIC_CACHE = 'musawwir-static-v9';
+const CACHE        = 'musawwir-v10';
+const STATIC_CACHE = 'musawwir-static-v10';
 
 // Static assets that rarely change — cache-first
 const STATIC_ASSETS = [
@@ -25,7 +25,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== 'musawwir-v9' && k !== 'musawwir-static-v9')
+        keys.filter(k => k !== 'musawwir-v10' && k !== 'musawwir-static-v10')
             .map(k => caches.delete(k))
       )
     )
@@ -48,6 +48,9 @@ self.addEventListener('fetch', e => {
       url.hostname.includes('sheetjs.com')) {
     return;
   }
+
+  // Skip Firebase auth handler — must never be cached (OAuth state is in URL fragment)
+  if (url.pathname.startsWith('/__/auth/')) return;
 
   // ── Static assets (fonts, icons) → cache-first ──
   if (STATIC_ASSETS.some(a => url.pathname === a)) {
