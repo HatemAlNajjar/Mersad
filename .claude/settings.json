@@ -5,7 +5,22 @@
       "Bash(git push -u origin main)",
       "Bash(git push origin main)",
       "Bash(git checkout main)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(git push -u origin *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 60,
+            "statusMessage": "دمج التغييرات ونشرها...",
+            "command": "cd /home/user/Mersad && CURRENT=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) && if [ \"$CURRENT\" != \"main\" ] && [ -n \"$(git log main..$CURRENT --oneline 2>/dev/null)\" ]; then git checkout main && git merge \"$CURRENT\" --no-ff -m \"Merge $CURRENT into main\" && git push origin main; fi 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }
