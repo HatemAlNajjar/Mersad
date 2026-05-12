@@ -158,6 +158,15 @@
     .topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
     .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
+    /* ── Auth gate: hide entire app until logged in ── */
+    body:not(.auth-ready) .topbar,
+    body:not(.auth-ready) #homePage,
+    body:not(.auth-ready) #projectPage,
+    body:not(.auth-ready) #shotFullscreen,
+    body:not(.auth-ready) #segFullscreen,
+    body:not(.auth-ready) .mobile-fab { display: none !important; }
+    body:not(.auth-ready) #loginPage { display: flex !important; visibility: visible !important; opacity: 1 !important; }
+
     .brand {
       font-size: 15px; font-weight: 600; color: var(--text-1);
       letter-spacing: -0.2px;
@@ -6783,6 +6792,7 @@ function updateUserPill(user) {
   // Check for project share link — works without login
   const shareId = new URLSearchParams(location.search).get('share');
   if (shareId) {
+    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     try {
       const snap = await getDoc(doc(db, 'sharedProjects', shareId));
@@ -6808,10 +6818,12 @@ function updateUserPill(user) {
   // Check for folder link — requires login to read live data
   const folderLinkId = new URLSearchParams(location.search).get('folderLink');
   if (folderLinkId) {
+    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     onAuthStateChanged(auth, async user => {
       fbUser = user; updateUserPill(user);
       if (!user) {
+        document.body.classList.remove('auth-ready');
         // Show login prompt
         const lp = document.getElementById('loginPage');
         lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
@@ -6822,7 +6834,7 @@ function updateUserPill(user) {
     return;
   }
 
-  const lp = document.getElementById('loginPage'); lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
+  // loginPage is shown via CSS (body:not(.auth-ready) #loginPage)
 
   // Handle redirect result (Safari/mobile Google sign-in)
   // Handle redirect result with visible feedback
@@ -6847,15 +6859,16 @@ function updateUserPill(user) {
     updateUserPill(user);
 
     if (!user) {
-      // Not logged in → show login page
-      const lp = document.getElementById('loginPage');
-      lp.style.display = 'flex'; lp.style.visibility = 'visible'; lp.style.opacity = '1';
+      // Not logged in → show login page (body stays without auth-ready class)
+      document.body.classList.remove('auth-ready');
       document.getElementById('projectPage').classList.remove('active');
       if (_userSharesUnsub) { _userSharesUnsub(); _userSharesUnsub = null; }
       _sharedFolders = [];
       return;
     }
 
+    // Logged in → reveal app
+    document.body.classList.add('auth-ready');
     document.getElementById('loginPage').style.display = 'none';
     _showSyncStatus(true);
 
