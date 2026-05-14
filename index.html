@@ -2404,11 +2404,13 @@ document.addEventListener('DOMContentLoaded', function() {
           <span>الأعمدة</span><span style="font-size:10px">▾</span>
         </button>
         <div class="sf-col-dropdown" id="sfColDropdown" onclick="event.stopPropagation()">
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-title"   onchange="setColVis('title',this.checked)"  > المشهد</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-content" onchange="setColVis('content',this.checked)"> المحتوى</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-face"    onchange="setColVis('face',this.checked)"   > الوجه</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-files"   onchange="setColVis('files',this.checked)"  > الملفات</label>
-          <label class="sf-col-item"><input type="checkbox" id="sfCol-done"    onchange="setColVis('done',this.checked)"   > الإتمام</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-title"     onchange="setColVis('title',this.checked)"    > المشهد</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-content"   onchange="setColVis('content',this.checked)"  > المحتوى</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-shooting"  onchange="setColVis('shooting',this.checked)" > التصوير</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-editMusic" onchange="setColVis('editMusic',this.checked)"> المونتاج</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-face"      onchange="setColVis('face',this.checked)"     > الوجه</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-files"     onchange="setColVis('files',this.checked)"    > الملفات</label>
+          <label class="sf-col-item"><input type="checkbox" id="sfCol-done"      onchange="setColVis('done',this.checked)"     > الإتمام</label>
         </div>
       </div>
     </div>
@@ -6245,7 +6247,7 @@ function tpOpenDisplay() {
 // ── Table View ──
 let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
-const _colVisDefault = { title: true, content: true, face: true, files: true, done: true };
+const _colVisDefault = { title: true, content: true, shooting: false, editMusic: false, face: true, files: true, done: true };
 let _tableColVis = Object.assign({}, _colVisDefault, JSON.parse(localStorage.getItem('sm_tableColVis') || '{}'));
 
 function toggleColDropdown(e) {
@@ -6304,7 +6306,7 @@ function buildTableViewHTML() {
     const segRuknOpts = ruknList.map(r=>`<option value="${r}" ${(seg.rukn||'')===r?'selected':''}>${r}</option>`).join('');
     const {val: segFaceVal, ph: segFacePh} = _segFaceLabel(seg);
     const cv = _tableColVis;
-    const colspanInfo = Math.max(1, (cv.title?1:0)+(cv.content?1:0)+(cv.face?1:0));
+    const colspanInfo = Math.max(1, (cv.title?1:0)+(cv.content?1:0)+(cv.shooting?1:0)+(cv.editMusic?1:0)+(cv.face?1:0));
     const colspanProg = Math.max(1, (cv.files?1:0)+(cv.done?1:0));
     rows += `<tr class="st-seg-row" onclick="stToggleSeg('${seg.id}')" style="cursor:pointer">
       <td style="white-space:nowrap;width:36px">
@@ -6335,11 +6337,13 @@ function buildTableViewHTML() {
       </td></tr>`;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th>
-      ${cv.title   ? `<th style="width:14%">المشهد</th>`   : ''}
-      ${cv.content ? `<th style="width:40%">المحتوى</th>` : ''}
-      ${cv.face    ? `<th style="width:12%">الوجه</th>`    : ''}
-      ${cv.files   ? `<th style="width:16%">الملفات</th>` : ''}
-      ${cv.done    ? `<th style="width:44px">✓</th>`       : ''}
+      ${cv.title     ? `<th style="width:14%">المشهد</th>`   : ''}
+      ${cv.content   ? `<th style="width:30%">المحتوى</th>` : ''}
+      ${cv.shooting  ? `<th style="width:14%">التصوير</th>` : ''}
+      ${cv.editMusic ? `<th style="width:14%">المونتاج</th>`: ''}
+      ${cv.face      ? `<th style="width:12%">الوجه</th>`    : ''}
+      ${cv.files     ? `<th style="width:16%">الملفات</th>` : ''}
+      ${cv.done      ? `<th style="width:44px">✓</th>`       : ''}
     </tr>`;
 
     const sortedShots = [...visibleShots];
@@ -6358,6 +6362,12 @@ function buildTableViewHTML() {
         ${cv.content ? `<td><textarea class="st-cell-input st-content-input" placeholder="المحتوى"
           style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
           oninput="stSet('${s.id}','content',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.content||'')}</textarea></td>` : ''}
+        ${cv.shooting ? `<td><textarea class="st-cell-input st-content-input" placeholder="الزاوية، الحركة، العدسة..."
+          style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
+          oninput="stSet('${s.id}','shooting',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.shooting||'')}</textarea></td>` : ''}
+        ${cv.editMusic ? `<td><textarea class="st-cell-input st-content-input" placeholder="المونتاج، الموسيقى..."
+          style="${s._rowHeight?'height:'+(s._rowHeight-20)+'px':''}"
+          oninput="stSet('${s.id}','editMusic',this.value);if(!this.closest('tr').style.height){this.style.height='auto';this.style.height=this.scrollHeight+'px'}" onchange="autoSave()">${esc(s.editMusic||'')}</textarea></td>` : ''}
         ${cv.face ? `<td>
           <input class="st-cell-input st-face-input" value="${esc(s.face||'')}" placeholder="الوجه"
             oninput="stSet('${s.id}','face',this.value);_refreshSegFaceEl('${seg.id}')" onchange="autoSave()">
@@ -6380,7 +6390,7 @@ function buildTableViewHTML() {
     });
   });
 
-  const totalCols = 1 + (_tableColVis.title?1:0) + (_tableColVis.content?1:0) + (_tableColVis.face?1:0) + (_tableColVis.files?1:0) + (_tableColVis.done?1:0);
+  const totalCols = 1 + (_tableColVis.title?1:0) + (_tableColVis.content?1:0) + (_tableColVis.shooting?1:0) + (_tableColVis.editMusic?1:0) + (_tableColVis.face?1:0) + (_tableColVis.files?1:0) + (_tableColVis.done?1:0);
   if (hasFilter && !rows) rows = `<tr><td colspan="${totalCols}" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
 
   return `<div class="shots-table-wrap"><table class="shots-table">
