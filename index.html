@@ -1943,7 +1943,7 @@
   }
   .shots-table {
     width: 100%; border-collapse: collapse;
-    font-size: 13px; min-width: 700px;
+    font-size: 13px; min-width: 700px; table-layout: fixed;
   }
   .shots-table thead th,
   .shots-table .st-header-row th {
@@ -1951,8 +1951,9 @@
     font-weight: 600; font-size: 11px; letter-spacing: 0.3px;
     padding: 10px 12px; text-align: right; white-space: nowrap;
     border-bottom: 1px solid var(--border);
+    position: relative; overflow: visible; user-select: none;
   }
-  .shots-table td {
+  .shots-table td { overflow: hidden;
     padding: 0; border-bottom: 1px solid var(--border);
     vertical-align: middle;
   }
@@ -1968,6 +1969,12 @@
   .st-num { color: var(--text-3); font-size: 11px; padding: 0 10px; width: 32px; text-align: center; position: relative; }
   .st-row-drag { position:absolute; bottom:0; left:0; right:0; height:8px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; }
   .st-row-drag::after { content:""; width:20px; height:2px; background:var(--border); border-radius:2px; display:block; }
+  .st-col-resize {
+    position:absolute; top:0; right:-3px; width:6px; height:100%;
+    cursor:col-resize; z-index:2; user-select:none; border-radius:3px;
+    transition: background 0.15s;
+  }
+  .st-col-resize:hover, .st-col-resize.resizing { background:var(--accent); opacity:0.6; }
   .st-cell-input {
     width: 100%; box-sizing: border-box;
     background: transparent; border: none; outline: none;
@@ -6249,6 +6256,8 @@ let _tableView = JSON.parse(localStorage.getItem('sm_tableView') || 'false');
 let _tableSort = localStorage.getItem('sm_tableSort') || 'order';
 const _colVisDefault = { title: true, content: true, shooting: false, editMusic: false, face: true, files: true, done: true };
 let _tableColVis = Object.assign({}, _colVisDefault, JSON.parse(localStorage.getItem('sm_tableColVis') || '{}'));
+const _colWidthDefault = { title: 140, content: 300, shooting: 160, editMusic: 160, face: 120, files: 160 };
+let _tableColWidths = Object.assign({}, _colWidthDefault, JSON.parse(localStorage.getItem('sm_tableColWidths') || '{}'));
 
 function toggleColDropdown(e) {
   e.stopPropagation();
@@ -6335,14 +6344,15 @@ function buildTableViewHTML() {
           </div>
         </div>
       </td></tr>`;
+    const cw = _tableColWidths;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th>
-      ${cv.title     ? `<th style="width:14%">المشهد</th>`   : ''}
-      ${cv.content   ? `<th style="width:30%">المحتوى</th>` : ''}
-      ${cv.shooting  ? `<th style="width:14%">التصوير</th>` : ''}
-      ${cv.editMusic ? `<th style="width:14%">المونتاج</th>`: ''}
-      ${cv.face      ? `<th style="width:12%">الوجه</th>`    : ''}
-      ${cv.files     ? `<th style="width:16%">الملفات</th>` : ''}
+      ${cv.title     ? `<th><span>المشهد</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'title')"></div></th>`   : ''}
+      ${cv.content   ? `<th><span>المحتوى</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'content')"></div></th>` : ''}
+      ${cv.shooting  ? `<th><span>التصوير</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'shooting')"></div></th>` : ''}
+      ${cv.editMusic ? `<th><span>المونتاج</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'editMusic')"></div></th>`: ''}
+      ${cv.face      ? `<th><span>الوجه</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'face')"></div></th>`    : ''}
+      ${cv.files     ? `<th><span>الملفات</span><div class="st-col-resize" onmousedown="stColResizeStart(event,'files')"></div></th>` : ''}
       ${cv.done      ? `<th style="width:44px">✓</th>`       : ''}
     </tr>`;
 
@@ -6393,7 +6403,19 @@ function buildTableViewHTML() {
   const totalCols = 1 + (_tableColVis.title?1:0) + (_tableColVis.content?1:0) + (_tableColVis.shooting?1:0) + (_tableColVis.editMusic?1:0) + (_tableColVis.face?1:0) + (_tableColVis.files?1:0) + (_tableColVis.done?1:0);
   if (hasFilter && !rows) rows = `<tr><td colspan="${totalCols}" style="text-align:center;padding:28px;color:var(--subtext);font-size:13px">لا توجد نتائج</td></tr>`;
 
-  return `<div class="shots-table-wrap"><table class="shots-table">
+  const cw = _tableColWidths;
+  const cv = _tableColVis;
+  const colgroup = `<colgroup>
+    <col style="width:36px">
+    ${cv.title     ? `<col id="stcol-title"     style="width:${cw.title}px">` : ''}
+    ${cv.content   ? `<col id="stcol-content"   style="width:${cw.content}px">` : ''}
+    ${cv.shooting  ? `<col id="stcol-shooting"  style="width:${cw.shooting}px">` : ''}
+    ${cv.editMusic ? `<col id="stcol-editMusic" style="width:${cw.editMusic}px">` : ''}
+    ${cv.face      ? `<col id="stcol-face"      style="width:${cw.face}px">` : ''}
+    ${cv.files     ? `<col id="stcol-files"     style="width:${cw.files}px">` : ''}
+    ${cv.done      ? `<col style="width:44px">` : ''}
+  </colgroup>`;
+  return `<div class="shots-table-wrap"><table class="shots-table">${colgroup}
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
@@ -6573,6 +6595,28 @@ function stRowResizeStart(e, shotId) {
   document.addEventListener('touchend', onEnd);
 }
 
+function stColResizeStart(e, colKey) {
+  e.preventDefault(); e.stopPropagation();
+  const startX = e.clientX;
+  const startW = _tableColWidths[colKey] || _colWidthDefault[colKey] || 120;
+  const col = document.getElementById('stcol-' + colKey);
+  const handle = e.currentTarget;
+  if (handle) handle.classList.add('resizing');
+  function onMove(ev) {
+    const w = Math.max(60, startW + (ev.clientX - startX));
+    _tableColWidths[colKey] = w;
+    if (col) col.style.width = w + 'px';
+  }
+  function onEnd() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    if (handle) handle.classList.remove('resizing');
+    localStorage.setItem('sm_tableColWidths', JSON.stringify(_tableColWidths));
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+}
+
 // ── Expose to window (needed for type="module") ──
 Object.assign(window, {
   createFolder, renameFolder, deleteFolder, toggleFolderOpen,
@@ -6607,7 +6651,7 @@ Object.assign(window, {
   showHome,
   openTp, closeTp, tpTogglePlay, tpSetSpeed, tpSetFont, tpSetLineSize, tpReset, tpOpenDisplay, tpFullscreen, tpStartScroll, tpStopScroll,
   sfNavigate, _sfUpdateNavBtns,
-  stRowResizeStart,
+  stRowResizeStart, stColResizeStart,
   openTextImport, closeTextImport, previewTextImport, doTextImport,
   setTableSort,
   toggleTableView, stSet, stToggleDone, stToggleSeg, stDelShot,
