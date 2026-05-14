@@ -297,6 +297,15 @@
     }
     .proj-card:hover .pc-del { opacity: 1; }
     .pc-del:hover { color: var(--red); }
+    .pc-dup {
+      position: absolute; top: 14px; left: 40px;
+      background: none; border: none; color: var(--text-3);
+      cursor: pointer; font-size: 13px; line-height: 1;
+      padding: 3px; border-radius: 4px;
+      opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .proj-card:hover .pc-dup { opacity: 1; }
+    .pc-dup:hover { color: var(--accent); }
 
     /* Trash section */
     .trash-section {
@@ -3034,6 +3043,7 @@ function projCardHTML(p, isShared=false) {
   return `
     <div class="proj-card" onclick="openSharedOrLocal('${p.id}',${isShared})">
       ${!isShared ? `<button class="pc-del" onclick="event.stopPropagation();confirmDel('${p.id}')" title="حذف">✕</button>` : ''}
+      ${!isShared ? `<button class="pc-dup" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="نسخ التصوير">⧉</button>` : ''}
       <div class="pc-title">${esc(p.name||'بدون عنوان')}</div>
       <div class="pc-meta">
         ${p.date?'<span>'+fmtDate(p.date)+'</span>':''}
@@ -3206,6 +3216,18 @@ async function createProject(folderId=null) {
 
 async function createProjectInFolder(fid) {
   createProject(fid);
+}
+
+async function duplicateProject(id) {
+  const p = getP(id);
+  if (!p) return;
+  const clone = JSON.parse(JSON.stringify(p));
+  clone.id = uid();
+  clone.name = (clone.name || 'بدون عنوان') + ' — نسخة';
+  clone.lastModified = Date.now();
+  delete clone.shareId; delete clone.shareMode;
+  await saveProject(clone);
+  renderHome();
 }
 
 async function openProject(id) {
@@ -6546,7 +6568,7 @@ Object.assign(window, {
   createFolder, renameFolder, deleteFolder, toggleFolderOpen,
   showMoveModal, selectMfOption, closeMoveModal, confirmMove,
   openMoveSegModal, closeMoveSegModal, executeMoveOrCopySeg,
-  createProject, createProjectInFolder, openProject, confirmDel,
+  createProject, createProjectInFolder, duplicateProject, openProject, confirmDel,
   trashRestoreProject, trashPermDelete, trashEmptyAll,
   toggleProjTrash, restoreSegFromTrash, permDeleteSegFromTrash,
   restoreShotFromTrash, permDeleteShotFromTrash,
