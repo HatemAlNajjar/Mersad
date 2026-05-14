@@ -3631,8 +3631,7 @@ function addShotToSeg(segId) {
   const s={id:uid(),title:'مشهد '+(_globalShotCount()+1),done:false,content:'',contentRich:'',shooting:'',editMusic:'',filename:'',filename2:'',timecodeNotes:[],tcOpen:false,collapsed:false};
   seg.shots.push(s);
   if (_tableView) {
-    const list = document.getElementById('shotsList');
-    if (list) list.innerHTML = buildTableViewHTML();
+    renderShots();
   } else {
     const body=document.getElementById('segbody-'+segId);
     if(body){ body.innerHTML=buildSegBodyHTML(seg); syncRunningTimers(); }
@@ -6309,7 +6308,6 @@ function buildTableViewHTML() {
           </div>
         </div>
       </td></tr>`;
-    const cv = _tableColVis;
     rows += `<tr class="st-seg-sub-${seg.id} st-header-row" style="display:${isCol?'none':''}">
       <th style="width:36px">#</th>
       ${cv.title   ? `<th style="width:14%">المشهد</th>`   : ''}
