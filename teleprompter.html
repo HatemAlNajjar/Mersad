@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>القارئ — مدير التصوير</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; user-select: none; }
+
+  #scroll {
+    position: absolute; inset: 0 0 72px 0;
+    overflow: hidden; padding: 60px 10%;
+  }
+  #text {
+    font-size: 52px; line-height: 1.7; text-align: center;
+    color: #fff; white-space: pre-wrap; word-break: break-word;
+  }
+  #text * { font-size: inherit !important; line-height: inherit !important; color: inherit !important; background: transparent !important; }
+
+  /* Fade masks top & bottom */
+  #scroll::before, #scroll::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 80px; z-index: 2; pointer-events: none;
+  }
+  #scroll::before { top: 0;    background: linear-gradient(to bottom, #000, transparent); }
+  #scroll::after  { bottom: 0; background: linear-gradient(to top,    #000, transparent); }
+
+  /* Center line */
+  #centerLine {
+    position: absolute; left: 0; right: 0; top: 50%; height: 3px;
+    background: rgba(10,132,255,0.35); z-index: 3; pointer-events: none;
+  }
+
+  /* Controls bar */
+  #controls {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: rgba(20,20,20,0.95); border-top: 1px solid #333;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 0 20px;
+  }
+  .ctrl-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; border-radius: 10px; padding: 8px 18px; font-size: 14px;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap; font-family: inherit;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.15); }
+  .ctrl-btn.active { background: rgba(10,132,255,0.3); border-color: rgba(10,132,255,0.6); }
+  .ctrl-group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #aaa; }
+  .ctrl-group input[type=range] { width: 90px; accent-color: #0a84ff; cursor: pointer; }
+  .ctrl-val { min-width: 36px; text-align: center; color: #fff; font-size: 13px; }
+  .ctrl-divider { width: 1px; height: 32px; background: #333; flex-shrink: 0; }
+
+  /* Mirror mode */
+  body.mirror-h #scroll { transform: scaleX(-1); }
+  body.mirror-v #scroll { transform: scaleY(-1); }
+  body.mirror-hv #scroll { transform: scale(-1,-1); }
+</style>
+</head>
+<body>
+<div id="centerLine"></div>
+<div id="scroll"><div id="text">جارٍ التحميل…</div></div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ تشغيل</button>
+  <button class="ctrl-btn" onclick="doReset()">↺ إعادة</button>
+  <div class="ctrl-divider"></div>
+
+  <div class="ctrl-group">
+    <span>السرعة</span>
+    <input type="range" id="speedSlider" min="0.2" max="5" step="0.1" value="1" oninput="setSpeed(+this.value)">
+    <span class="ctrl-val" id="speedVal">1.0x</span>
+  </div>
+  <div class="ctrl-divider"></div>
+
+  <div class="ctrl-group">
+    <span>الخط</span>
+    <input type="range" id="fontSlider" min="24" max="120" step="4" value="52" oninput="setFont(+this.value)">
+    <span class="ctrl-val" id="fontVal">52px</span>
+  </div>
+  <div class="ctrl-divider"></div>
+
+  <button class="ctrl-btn" id="mirrorBtn" onclick="cycleMirror()" title="انعكاس">⇔ انعكاس</button>
+</div>
+
+<script>
+  const ch = new BroadcastChannel('musawwir-teleprompter');
+  let playing = false, speed = 1, fontSize = 52, scrollY = 0, raf = null;
+  let mirrorMode = 0; // 0=none 1=H 2=V 3=HV
+
+  const scroll = document.getElementById('scroll');
+  const textEl = document.getElementById('text');
+  const playBtn = document.getElementById('playBtn');
+  const speedSlider = document.getElementById('speedSlider');
+  const speedVal = document.getElementById('speedVal');
+  const fontSlider = document.getElementById('fontSlider');
+  const fontVal = document.getElementById('fontVal');
+
+  function applyFont(v) {
+    fontSize = v;
+    textEl.style.fontSize = v + 'px';
+    fontSlider.value = v;
+    fontVal.textContent = v + 'px';
+  }
+
+  function setSpeed(v) {
+    speed = v;
+    speedSlider.value = v;
+    speedVal.textContent = v.toFixed(1) + 'x';
+    ch.postMessage({ cmd: 'speed', val: v });
+  }
+
+  function setFont(v) {
+    applyFont(v);
+    ch.postMessage({ cmd: 'fontSize', val: v });
+  }
+
+  function togglePlay() {
+    playing = !playing;
+    playBtn.textContent = playing ? '⏸ إيقاف' : '▶ تشغيل';
+    playBtn.classList.toggle('active', playing);
+    ch.postMessage({ cmd: playing ? 'play' : 'pause' });
+    if (playing) tick();
+  }
+
+  function doReset() {
+    playing = false;
+    playBtn.textContent = '▶ تشغيل';
+    playBtn.classList.remove('active');
+    scrollY = 0;
+    scroll.scrollTop = 0;
+    ch.postMessage({ cmd: 'reset' });
+  }
+
+  function tick() {
+    if (!playing) return;
+    scrollY += speed * 0.6;
+    scroll.scrollTop = scrollY;
+    const pct = scroll.scrollHeight > scroll.clientHeight
+      ? scrollY / (scroll.scrollHeight - scroll.clientHeight) : 0;
+    ch.postMessage({ cmd: 'pos', pct });
+    if (scrollY < scroll.scrollHeight) raf = requestAnimationFrame(tick);
+    else { playing = false; playBtn.textContent = '▶ تشغيل'; playBtn.classList.remove('active'); }
+  }
+
+  function cycleMirror() {
+    mirrorMode = (mirrorMode + 1) % 4;
+    document.body.className = ['', 'mirror-h', 'mirror-v', 'mirror-hv'][mirrorMode];
+    document.getElementById('mirrorBtn').classList.toggle('active', mirrorMode !== 0);
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'KeyR') doReset();
+    if (e.code === 'ArrowUp')   setSpeed(Math.min(5, +(speed + 0.2).toFixed(1)));
+    if (e.code === 'ArrowDown') setSpeed(Math.max(0.2, +(speed - 0.2).toFixed(1)));
+  });
+
+  // Receive commands from main window
+  function handleCmd(d) {
+    if (d.cmd === 'load') {
+      // Accept both rich HTML and plain text
+      if (/<[a-z][\s\S]*>/i.test(d.text)) {
+        textEl.innerHTML = d.text;
+      } else {
+        textEl.textContent = d.text;
+      }
+      scrollY = 0; scroll.scrollTop = 0;
+      if (d.fontSize) applyFont(d.fontSize);
+      if (d.speed) { speed = d.speed; speedSlider.value = d.speed; speedVal.textContent = d.speed.toFixed(1) + 'x'; }
+    }
+    if (d.cmd === 'play')  { if (!playing) togglePlay(); }
+    if (d.cmd === 'pause') { if (playing)  togglePlay(); }
+    if (d.cmd === 'reset') doReset();
+    if (d.cmd === 'speed') { speed = d.val; speedSlider.value = d.val; speedVal.textContent = d.val.toFixed(1) + 'x'; }
+    if (d.cmd === 'fontSize') applyFont(d.val);
+    if (d.cmd === 'lineSize') { textEl.style.lineHeight = d.val ? (d.val / fontSize).toFixed(2) : '1.7'; }
+    if (d.cmd === 'scrollStart') {
+      playing = false;
+      function manualScroll() {
+        scrollY += (d.dir === 'down' ? 1 : -1) * speed * 0.6;
+        scrollY = Math.max(0, scrollY);
+        scroll.scrollTop = scrollY;
+        raf = requestAnimationFrame(manualScroll);
+      }
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(manualScroll);
+    }
+    if (d.cmd === 'scrollStop') { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+  }
+
+  ch.onmessage = ({ data }) => handleCmd(data);
+  window.addEventListener('message', ({ data }) => { if (data && data.cmd) handleCmd(data); });
+</script>
+</body>
+</html>
