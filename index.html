@@ -2394,7 +2394,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <button class="sf-col-btn" id="sfColBtn" onclick="toggleColDropdown(event)" title="إظهار/إخفاء الأعمدة">
           <span>الأعمدة</span><span style="font-size:10px">▾</span>
         </button>
-        <div class="sf-col-dropdown" id="sfColDropdown">
+        <div class="sf-col-dropdown" id="sfColDropdown" onclick="event.stopPropagation()">
           <label class="sf-col-item"><input type="checkbox" id="sfCol-title"   onchange="setColVis('title',this.checked)"  > المشهد</label>
           <label class="sf-col-item"><input type="checkbox" id="sfCol-content" onchange="setColVis('content',this.checked)"> المحتوى</label>
           <label class="sf-col-item"><input type="checkbox" id="sfCol-face"    onchange="setColVis('face',this.checked)"   > الوجه</label>
