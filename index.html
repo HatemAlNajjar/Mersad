@@ -2389,8 +2389,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <select class="sf-select" id="sfRuknSel" style="display:none" onchange="setShotFilter('rukn',this.value)">
         <option value="">الكل</option>
       </select>
-      <div class="sf-divider"></div>
-      <div style="position:relative">
+      <div class="sf-divider" id="sfColDivider"></div>
+      <div style="position:relative" id="sfColWrap">
         <button class="sf-col-btn" id="sfColBtn" onclick="toggleColDropdown(event)" title="إظهار/إخفاء الأعمدة">
           <span>الأعمدة</span><span style="font-size:10px">▾</span>
         </button>
@@ -4196,6 +4196,10 @@ function _updateFilterUI() {
   const { done, face, rukn, chrono } = _shotFilter;
   const bar = document.getElementById('shotsFilterBar'); if (!bar) return;
   bar.style.display = cur ? 'flex' : 'none';
+  const colWrap = document.getElementById('sfColWrap');
+  const colDiv  = document.getElementById('sfColDivider');
+  if (colWrap) colWrap.style.display = _tableView ? '' : 'none';
+  if (colDiv)  colDiv.style.display  = _tableView ? '' : 'none';
   // done chips
   ['All','Done','Pending'].forEach(k => {
     const el = document.getElementById('sfDone'+k);
@@ -6239,8 +6243,7 @@ function toggleColDropdown(e) {
 function setColVis(col, visible) {
   _tableColVis[col] = visible;
   localStorage.setItem('sm_tableColVis', JSON.stringify(_tableColVis));
-  const list = document.getElementById('shotList');
-  if (list) list.innerHTML = buildTableViewHTML();
+  renderShots();
 }
 
 document.addEventListener('click', () => {
